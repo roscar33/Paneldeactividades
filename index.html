@@ -1,374 +1,631 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Lectura Pro v5.0</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f5f5f4; color: #451a03; }
-    .card { background: white; border-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    input, textarea, select { border: 1.5px solid #e7e5e4 !important; border-radius: 14px !important; padding: 12px !important; outline: none !important; }
-    .btn-tab-active { background-color: #6b21a8; color: white; font-weight: 800; }
-    .btn-tab-inactive { color: #a8a29e; font-weight: 700; }
-    .status-toggle { width: 40px; height: 20px; background: #d1d5db; border-radius: 20px; position: relative; cursor: pointer; transition: 0.3s; }
-    .status-toggle.active { background: #22c55e; }
-    .status-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s; }
-    .status-toggle.active::after { left: 22px; }
-    .badge-grado { cursor: pointer; transition: 0.2s; }
-    .badge-grado.selected { background-color: #6b21a8; color: white; border-color: #6b21a8; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+<title>Seguimiento Escolares · Primaria 2026</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Kalam:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lora:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: system-ui, Arial, sans-serif; background: #dff5e1; padding-bottom: 40px; user-select: none; }
+
+  /* CABECERA */
+  .header { background: #1b5e20; color: #fff; padding: 20px 16px 35px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 1000; }
+  .header img { width: 70px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); flex-shrink: 0; }
+  .header-text { display: flex; flex-direction: column; gap: 2px; }
+  .header h2 { margin: 0; font-size: 13px; line-height: 1.2; font-weight: 800; text-transform: uppercase; }
+  .header h4 { margin: 0; font-weight: 500; color: #a5d6a7; font-size: 11px; margin-top: 2px; }
+  .header p { margin: 0; font-size: 11px; opacity: 0.9; font-style: italic; margin-top: 2px; color: #fff; }
+
+  /* LOGIN */
+  #login-section { padding: 40px 20px; text-align: center; }
+  .login-card { background: #fff; padding: 30px 20px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 400px; margin: 20px auto; }
+
+  /* DASHBOARD */
+  #main-dashboard { display: none; padding: 0 20px; margin-top: 40px; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-btn { background: white; border-radius: 30px; padding: 25px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.06); border: none; cursor: pointer; transition: transform 0.2s ease; }
+  .card-btn:active { transform: scale(0.95); }
+  .card-btn.full { grid-column: span 2; padding: 30px 20px; }
+  .icon-circle { width: 60px; height: 60px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin-bottom: 12px; }
+  .blue-bg { background: #e3f2fd; } .orange-bg { background: #fff3e0; } .purple-bg { background: #f3e5f5; } .teal-bg { background: #e0f2f1; }
+  .card-label { font-weight: 900; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-info { font-size: 10px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+
+  /* CONTENEDORES */
+  .container { background: #fff; width: 92%; margin: 30px auto; padding: 20px 16px; border-radius: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: none; animation: slideUp 0.3s ease-out; }
+  .btn-back { background: #f1f5f9; border: none; padding: 10px 20px; border-radius: 50px; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 20px; cursor: pointer; }
+   
+  /* ELEMENTOS UI */
+  input, textarea, select { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; background: #f9f9f9; outline: none; }
+  .btn { width: 100%; padding: 15px; background: #1b5e20; color: #fff; font-weight: 800; border: none; border-radius: 14px; cursor: pointer; font-size: 15px; box-shadow: 0 4px 0 #145018; margin-top: 5px; }
+  .btn.blue { background: #0277bd; box-shadow: 0 4px 0 #01579b; } .btn.sec { background: #546e7a; box-shadow: 0 4px 0 #37474f; }
+  .sig-wrap { margin-top: 15px; padding: 10px; border-radius: 14px; background: #f1f5f9; border: 2px dashed #b0bec5; }
+  canvas { width: 100%; height: 180px; border-radius: 8px; background: #fff; touch-action: none; display: block; }
+  .pizarra-header-ui { background: #6d4c41; color: white; padding: 15px; border-radius: 14px 14px 0 0; text-align: center; font-weight: 900; font-size: 18px; margin: -20px -16px 15px; }
+  .footer-container { margin-top: 30px; text-align: center; padding: 20px; }
+  .footer-text { font-family: 'Great Vibes', cursive; font-size: 32px; color: #1b5e20; }
+  .success-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; z-index: 5000; color:white; text-align:center; padding: 40px 24px; justify-content:center; align-items:center; flex-direction:column; backdrop-filter: blur(8px); }
+
+  /* AGENDA TEXTO */
+  .agenda-task-desc { font-size: 14px; color: #334155; line-height: 1.6; margin-top: 10px; background: #f8fafc; padding: 18px; border-radius: 16px; border: 1px solid #e2e8f0; word-break: break-word; }
+  .caps-highlight { color: #d32f2f; font-weight: 900; }
+  .bullet-row { display: flex; gap: 10px; margin: 8px 0; padding-left: 5px; }
+  .bullet-dot { color: #2e7d32; font-weight: 900; font-size: 18px; line-height: 1; }
+  .paragraph-spacer { display: block; margin-bottom: 12px; }
+  .agenda-filters { background: #f1f5f9; padding: 12px; border-radius: 14px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+  .filter-label { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; }
+  .filter-select { width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600; color: #1e293b; background: white; margin-bottom: 0 !important; }
+
+  /* PERIÓDICO ESCOLAR */
+  .tablero-container { grid-column: 1 / -1; margin-top: 20px; margin-bottom: 20px; }
+  .tablero-titulo { text-align: center; font-weight: 900; color: #5d4037; margin-bottom: 10px; text-transform: uppercase; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .tablero-cork {
+    background: #d7b594; background-image: radial-gradient(#bc9a7a 10%, transparent 10%); background-size: 10px 10px;
+    padding: 20px 10px; border-radius: 20px; 
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
+    justify-content: center;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.1); min-height: 250px; border: 8px solid #8d6e63;
+  }
+  .sticky-note {
+    width: 100%; min-height: 140px; padding: 15px; position: relative; box-shadow: 4px 4px 6px rgba(0,0,0,0.2);
+    transform: rotate(-1deg); transition: transform 0.2s; display: flex; flex-direction: column; justify-content: center;
+    text-align: center; word-break: break-word; cursor: pointer;
+    font-family: 'Kalam', cursive; font-size: 15px; color: #1e3a8a; line-height: 1.1;
+  }
+  .sticky-note:active { transform: scale(0.95); }
+  .sticky-note:nth-child(even) { transform: rotate(1.5deg); }
+  .sticky-note:nth-child(3n) { transform: rotate(-1.5deg); }
+   
+  .note-pink   { background-color: #fbcfe8 !important; } 
+  .note-blue   { background-color: #bae6fd !important; } 
+  .note-green  { background-color: #bbf7d0 !important; } 
+  .note-yellow { background-color: #fef08a !important; }
+  .note-orange { background-color: #ffcc80 !important; color: #fff !important; }
+  .note-red    { background-color: #ffcdd2 !important; color: #b71c1c !important; }
+  .note-purple { background-color: #e9d5ff !important; color: #581c87 !important; }
+  .note-teal   { background-color: #99f6e4 !important; color: #115e59 !important; }
+  .note-lime   { background-color: #d9f99d !important; color: #365314 !important; }
+  .note-white  { background-color: #ffffff !important; color: #1e293b !important; border: 1px solid #cbd5e1 !important; }
+  .note-brown  { background-color: #d7ccc8 !important; color: #3e2723 !important; }
+
+  .note-pin { width: 14px; height: 14px; background: #ef4444; border-radius: 50%; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); box-shadow: 1px 1px 3px rgba(0,0,0,0.3); border: 1px solid #b91c1c; }
+
+  .wood-board { width: 100%; min-height: 160px; background: #5d4037; border-radius: 6px; padding: 15px 8px 8px 8px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transform: rotate(0deg) !important; cursor: pointer; display: flex; flex-direction: column; }
+  .wood-board-modal { width: 100%; max-width: 350px; background: #5d4037; padding: 25px 15px 15px 15px; border-radius: 8px; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+
+  .metal-clip { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 60px; height: 18px; background: #cfd8dc; border: 2px solid #90a4ae; border-radius: 4px; box-shadow: 0 2px 3px rgba(0,0,0,0.3); z-index: 10; }
+  .parchment-paper { background: #fff8e1; border: 1px solid #d7ccc8; flex: 1; padding: 12px; font-family: 'Lora', serif; box-shadow: 0 1px 3px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 4px; position: relative; }
+   
+  .parchment-paper.orange-style, .parchment-paper.white-style { background: #ffffff !important; border: 1px solid #e2e8f0 !important; color: #000000 !important; }
+  .parchment-paper.orange-style .parchment-header, .parchment-paper.white-style .parchment-header { border-bottom: 2px solid #880e4f !important; color: #880e4f !important; }
+  .parchment-paper.orange-style .parchment-title, .parchment-paper.white-style .parchment-title, .parchment-paper.orange-style .parchment-label, .parchment-paper.white-style .parchment-label { color: #880e4f !important; text-shadow: none !important; }
+  .parchment-paper.orange-style .parchment-val, .parchment-paper.white-style .parchment-val { color: #000000 !important; text-shadow: none !important; }
+  .parchment-paper.orange-style .parchment-footer, .parchment-paper.white-style .parchment-footer { color: #333 !important; opacity: 1 !important; }
+
+  .parchment-header { text-align: center; border-bottom: 2px solid #c62828; padding-bottom: 4px; margin-bottom: 6px; }
+  .parchment-title { font-family: 'Cinzel', serif; color: #c62828; font-weight: 900; font-size: 14px; text-transform: uppercase; }
+  .parchment-row { margin-bottom: 4px; border-bottom: 1px dashed #efebe9; padding-bottom: 2px; }
+  .parchment-label { display: block; font-size: 9px; font-weight: 900; color: #c62828; text-transform: uppercase; letter-spacing: 0.5px; }
+  .parchment-val { font-size: 12px; font-weight: 700; color: #000000; line-height: 1.2; }
+  .parchment-footer { font-size: 9px; color: #5d4037; text-align: center; margin-top: auto; font-style: italic; }
+
+  .polaroid-frame { background: white; padding: 5px 5px 15px 5px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 5px; transform: rotate(-2deg); }
+  .polaroid-img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .video-indicator { position: absolute; top: 10px; right: 10px; font-size: 24px; color: #d32f2f; filter: drop-shadow(0 2px 2px rgba(255,255,255,0.8)); }
+
+  .heart-badge { position: absolute; top: -6px; right: -6px; background: #fff0f5; color: #b71c1c; border: 1px solid #ffcdd2; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 900; transform: rotate(5deg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; font-family: system-ui, sans-serif; display: flex; align-items: center; gap: 3px; white-space: nowrap; max-width: 95%; overflow: hidden; }
+
+  .like-btn { position: absolute; bottom: 5px; right: 5px; background: none; border: none; font-size: 18px; cursor: pointer; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); z-index: 20; padding: 5px; transition: transform 0.2s; }
+  .like-btn:active { transform: scale(1.3); }
+
+  #modal-aviso-zoom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; animation: fadeIn 0.2s; }
+  .note-large { width: 100%; max-width: 350px; padding: 30px 20px; font-family: 'Kalam', cursive; font-size: 22px; color: #1e3a8a; border-radius: 5px; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.8); transform: rotate(-1deg); display: flex; flex-direction: column; align-items: center; }
+  .zoom-photo { width: 100%; height: auto !important; border-radius: 4px; margin-bottom: 15px; border: 8px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.25s ease; cursor: zoom-in; }
+  .zoom-active { transform: scale(1.8); cursor: zoom-out; z-index: 50; position: relative; }
+
+  .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; overflow: hidden; border-radius: 12px; margin-bottom: 15px; background: #000; }
+  .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+   
+  @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* --- ESTILOS DE TALLER DE LECTURA --- */
+  .lectura-texto { background: #fff8e1; padding: 20px; border-radius: 16px; border: 1.5px solid #ffe082; font-family: 'Lora', serif; font-size: 15px; line-height: 1.7; color: #424242; margin-bottom: 25px; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+  .pregunta-card { background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+  .opcion-label { display: block; padding: 12px; background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; margin-top: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .opcion-label:has(input:checked) { border-color: #1b5e20; background: #e8f5e9; color: #1b5e20; }
+  .badge-tipo { font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 8px; display: inline-block; }
+
+</style>
+
+<script>
+  const firebaseConfig = { apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8", authDomain: "diariodeprocesos-6f78d.firebaseapp.com", projectId: "diariodeprocesos-6f78d" };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const estudiantesValidos = [
+    { doc: "1042155626", nombre: "MARTINEZ ARANGO AYLYN", grado: "Primero" }, 
+    { doc: "1041636979", nombre: "OSORIO MUÑOZ JERONIMO", grado: "Primero" },
+    { doc: "1041636870", nombre: "GONZALEZ BETANCUR MARIA JOSE", grado: "Segundo" }, 
+    { doc: "1042155380", nombre: "GUTIERREZ CHAVARRIA JOSE LEANDRO", grado: "Segundo" },
+    { doc: "1041636841", nombre: "VARELAS BARRIENTOS LUCIANA", grado: "Segundo" }, 
+    { doc: "1041636641", nombre: "MARTINEZ MARTINEZ SEBASTIAN", grado: "Segundo" },
+    { doc: "1035922719", nombre: "MOLINA OCHOA BELEN", grado: "Tercero" }, 
+    { doc: "1067959648", nombre: "PACHECO BARRERA JOSE DANIEL", grado: "Tercero" },
+    { doc: "1032328826", nombre: "LOPERA CADAVID LUCIANA", grado: "Segundo" }, 
+    { doc: "1042155250", nombre: "CASAS FERNANDEZ ANTONELLA", grado: "Cuarto" },
+    { doc: "1035801483", nombre: "RESTREPO VILLA DILMER FELIPE", grado: "Cuarto" }, 
+    { doc: "1157463842", nombre: "BERRIO CORREA VALENTINA", grado: "Quinto" },
+    { doc: "1038213324", nombre: "GUZMAN CORREA DYLAN", grado: "Quinto" }, 
+    { doc: "1041636021", nombre: "VARELAS BARRIENTOS MAXIMILIANO", grado: "Quinto" },
+    { doc: "12345678", nombre: "PEDRO PEREZ", grado: "Quinto" }
+  ];
+</script>
 </head>
-<body class="p-4 pb-20">
 
-  <header class="max-w-4xl mx-auto mb-6 text-center">
-    <h1 class="text-2xl font-black uppercase text-purple-900 tracking-tighter">Panel de Lectura Pro <span class="text-purple-500">v5.0</span></h1>
-    <div class="flex gap-2 bg-stone-200 p-1.5 rounded-2xl mt-4 max-w-sm mx-auto">
-        <button onclick="switchTab('editor')" id="tab-editor" class="flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm transition-all">Editor</button>
-        <button onclick="switchTab('resultados')" id="tab-resultados" class="flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive transition-all">Resultados</button>
+<body>
+
+  <div class="header" id="mainHeader">
+    <img src="escudo.png" alt="Escudo">
+    <div class="header-text">
+      <h2 id="inst-title">INSTITUCIÓN EDUCATIVA DE MARÍA - Sede Rural Santa Juana.</h2>
+      <h4 id="inst-sub">Sistema Integrado de Gestión Escolar María Juana.</h4>
+      <p id="inst-doc">Docente: Oscar Barrientos. 2026</p>
     </div>
-  </header>
+  </div>
 
-  <main class="max-w-4xl mx-auto">
+  <div id="login-section">
+    <div class="login-card">
+      <p style="font-weight:900; color:#1b5e20; margin-bottom:15px; text-transform:uppercase;">Acceso para Acudientes</p>
+      <input id="globalDocInput" type="number" placeholder="Ingrese documento del estudiante..." inputmode="numeric">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px; font-size:13px; color:#555;">
+        <input type="checkbox" id="chkGlobalSave">
+        <label for="chkGlobalSave">Mantener sesión iniciada</label>
+      </div>
+      <button class="btn" onclick="iniciarSesionApp()">INGRESAR AL SISTEMA</button>
+    </div>
+  </div>
+
+  <div id="main-dashboard">
+    <button class="card-btn" onclick="navegarA('exc')"><div class="icon-circle blue-bg">📋</div><span class="card-label">Asistencia</span><span class="card-info">Fallas y Excusas</span></button>
+    <button class="card-btn" onclick="navegarA('obs')"><div class="icon-circle orange-bg">✍️</div><span class="card-label">Observador</span><span class="card-info">Conducta Escolar</span></button>
     
-    <div id="view-editor" class="space-y-6">
-        <section class="card p-6 space-y-4">
-            <h2 id="form-title" class="text-[11px] font-black uppercase text-stone-400 mb-2">Crear / Editar Actividad</h2>
-            
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-stone-500 uppercase px-1">1. Seleccionar Grados:</label>
-                <div id="selector-grados" class="flex flex-wrap gap-2">
-                    <button onclick="toggleGradoSel(this)" value="Primero" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Primero</button>
-                    <button onclick="toggleGradoSel(this)" value="Segundo" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Segundo</button>
-                    <button onclick="toggleGradoSel(this)" value="Tercero" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Tercero</button>
-                    <button onclick="toggleGradoSel(this)" value="Cuarto" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Cuarto</button>
-                    <button onclick="toggleGradoSel(this)" value="Quinto" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Quinto</button>
-                    <button onclick="toggleGradoSel(this, true)" value="Todos" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Todos</button>
-                </div>
-            </div>
+    <button class="card-btn" onclick="navegarA('piz')"><div class="icon-circle purple-bg">🏫</div><span class="card-label">Pizarra Escolar</span><span class="card-info">Alertas y Agenda</span></button>
+    
+    <button class="card-btn" onclick="navegarA('int')"><div class="icon-circle teal-bg">🎮</div><span class="card-label">Escuela Interactiva</span><span class="card-info">Juegos y Práctica</span></button>
 
-            <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                <label class="text-[10px] font-black text-purple-700 uppercase px-1 mb-1 block">Opcional: Asignar a un SOLO estudiante (Individual)</label>
-                <select id="targetStudentDoc" class="w-full text-xs font-bold bg-white text-purple-900 border-purple-200">
-                    <option value="">-- Dejar en blanco para aplicar a todo el grupo --</option>
-                    </select>
-                <p class="text-[9px] text-purple-600 mt-1 font-bold">Si seleccionas un niño, los demás no verán esta actividad.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                <input type="text" id="tituloTaller" placeholder="Título de la actividad..." class="w-full text-xs font-bold">
-                <div class="flex flex-col">
-                    <span class="text-[9px] font-black text-red-600 uppercase px-1 mb-1">Fecha y Hora de Cierre:</span>
-                    <input type="datetime-local" id="fechaVencimiento" class="w-full text-xs font-bold bg-red-50 text-red-900 border-red-200">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                <select id="tipoActividad" class="w-full text-xs font-bold bg-stone-50"><option value="">Tipo...</option><option>Taller de Comprensión Lectora</option><option>Taller Evaluativo</option><option>Taller de Refuerzo</option><option>Taller de Repaso</option></select>
-                <select id="areaConocimiento" class="w-full text-xs font-bold bg-stone-50"><option value="">Área...</option><option>ESPAÑOL (LENGUAJE)</option><option>MATEMATICAS</option><option>CIENCIAS NATURALES</option><option>CIENCIAS SOCIALES</option><option>INGLES</option><option>ARTISTICA</option><option>EDUCACION FISICA</option><option>ETICA Y VALORES</option><option>RELIGION</option><option>TECNOLOGIA E INFORMATICA</option></select>
-            </div>
-
-            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí..." class="w-full text-sm font-medium mt-2"></textarea>
-            <div id="contenedorPreguntas" class="space-y-6 border-t pt-4"></div>
-
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="agregarPregunta('multiple')" class="py-3 bg-purple-50 text-purple-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-purple-200 hover:bg-purple-100">+ Múltiple</button>
-                <button onclick="agregarPregunta('verdadero_falso')" class="py-3 bg-green-50 text-green-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-green-200 hover:bg-green-100">+ V / F</button>
-                <button onclick="agregarPregunta('abierta')" class="py-3 bg-blue-50 text-blue-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-blue-200 hover:bg-blue-100">+ Abierta</button>
-            </div>
-
-            <div class="flex gap-3 pt-4 border-t">
-                <button onclick="guardarTaller('draft')" id="btnBorrador" class="flex-1 py-4 bg-stone-200 text-stone-600 rounded-2xl font-black uppercase text-xs hover:bg-stone-300">Guardar Borrador</button>
-                <button onclick="guardarTaller('published')" id="btnPublicar" class="flex-[2] py-4 bg-purple-900 text-white rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-transform">Publicar en Escuela</button>
-            </div>
-        </section>
-
-        <section class="space-y-4">
-            <div class="flex gap-2 bg-stone-200 p-1.5 rounded-xl">
-                <button onclick="setFiltroLista('publicados')" id="filtro-publicados" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg bg-white shadow-sm text-purple-900 transition-all">Publicados</button>
-                <button onclick="setFiltroLista('borradores')" id="filtro-borradores" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg text-stone-500 hover:bg-white transition-all">Borradores</button>
-                <button onclick="setFiltroLista('archivados')" id="filtro-archivados" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg text-stone-500 hover:bg-white transition-all">Archivados</button>
-            </div>
-            <div id="listaTalleres" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-        </section>
+    <div class="tablero-container">
+      <div class="tablero-titulo">📰 Periódico Escolar</div>
+      <div id="dashboard-avisos" class="tablero-cork">
+        <p style="color:white; font-size:12px;">Cargando avisos...</p>
+      </div>
     </div>
 
-    <div id="view-resultados" class="hidden space-y-4">
+    <button class="btn" style="grid-column: span 2; background:#455a64;" onclick="abrirSoporte()">💬 SOPORTE Y COMUNICACIÓN</button>
+  </div>
+
+  <div id="view-exc" class="container"><button class="btn-back" onclick="volverAlMenu()">🔙 Regresar</button><div id="formExc"><div id="nombreExc" style="text-align:center; font-weight:900;"></div><div id="periodoAsisLabel" style="text-align:center; font-size:11px; background:#1b5e20; color:white; padding:3px; margin:10px 0; border-radius:4px;"></div><div style="display:flex; gap:10px; margin-bottom:15px;"><div style="flex:1; text-align:center; padding:10px; border-radius:12px; color:#fff; background:#ef4444;" onclick="mostrarListadoFechas('I')"><span id="statFallas" style="display:block; font-size:22px; font-weight:900;">0</span>FALLAS</div><div style="flex:1; text-align:center; padding:10px; border-radius:12px; color:#fff; background:#f97316;" onclick="mostrarListadoFechas('E')"><span id="statExcusas" style="display:block; font-size:22px; font-weight:900;">0</span>EXCUSAS</div></div><input id="fechaExc" type="date"><select id="motivoExc"><option value="">Motivo...</option><option>Enfermedad</option><option>Cita médica</option><option>Otro</option></select><textarea id="detalleExc" placeholder="Motivo..."></textarea><div class="sig-wrap"><canvas id="sigExc"></canvas><button class="btn sec" onclick="limpiarPad('sigExc')">Borrar</button></div><button class="btn" style="margin-top:15px" onclick="enviarExcusa()">ENVIAR EXCUSA</button></div></div>
+   
+  <div id="view-obs" class="container"><button class="btn-back" onclick="volverAlMenu()">🔙 Regresar</button><div id="resultadoObs"></div></div>
+   
+  <div id="view-piz" class="container"><button class="btn-back" onclick="volverAlMenu()">🔙 Regresar</button><div class="pizarra-header-ui">🏫 Pizarra Escolar</div><div style="display:flex; background:#5d4037; padding:10px 5px 0; margin:0 -20px 15px;"><button id="tab-notas" style="flex:1; padding:14px; font-weight:bold; color:white; background:transparent; border:none;" onclick="switchTabAlerta('notas')">⚠️ Alertas</button><button id="tab-agenda" style="flex:1; padding:14px; font-weight:bold; color:white; background:transparent; border:none;" onclick="switchTabAlerta('agenda')">📅 Agenda</button></div><div id="aaNombre" style="text-align:center; font-weight:900; margin-bottom:5px;"></div><div id="aaBadge" style="text-align:center; font-size:10px; background:#1b5e20; color:white; padding:3px 10px; margin:0 auto 15px; border-radius:50px; width:fit-content;"></div><div id="view-aa-notas"><div id="aaLista"></div></div><div id="view-aa-agenda" style="display:none;"><div class="agenda-filters"><span class="filter-label">Ordenar:</span><select id="agendaSortOrder" class="filter-select" onchange="cargarAgendaEscolar(gradoEstudianteActual)"><option value="prox">Más próximas</option><option value="lejos">Más lejanas</option><option value="creado">Recientes</option></select></div><button onclick="descargarAgendaPDF()" class="btn" style="background:#ef4444; margin-bottom:15px;">📄 Descargar Agenda PDF</button><div id="aaAgendaLista"></div></div></div>
+
+  <div id="view-int" class="container">
+    <button class="btn-back" onclick="volverAlMenu()">🔙 Regresar</button>
+    <div style="text-align:center; font-weight:900; margin-bottom:20px; color:#00796b; text-transform:uppercase;">Escuela Interactiva</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <a href="https://roscar33.github.io/Tablasdemultiplicar/" target="_blank" style="text-decoration:none;">
+            <button class="card-btn" style="width:100%; border:2px solid #e0f2f1; min-height:160px;">
+                <div class="icon-circle teal-bg">🔢</div>
+                <span class="card-label">TABLAS DE MULTIPLICAR</span>
+                <span class="card-info">¡Aprende jugando!</span>
+            </button>
+        </a>
+        <a href="https://roscar33.github.io/Sumastablas/" target="_blank" style="text-decoration:none;">
+            <button class="card-btn" style="width:100%; border:2px solid #e0f2f1; min-height:160px;">
+                <div class="icon-circle teal-bg">➕</div>
+                <span class="card-label">TABLAS DE SUMAS</span>
+                <span class="card-info" style="font-size:9px;">solo grados segundo</span>
+            </button>
+        </a>
+        <button class="card-btn" style="grid-column: span 2; border:2px solid #f3e5f5; min-height:120px;" onclick="abrirSeccionLectura()">
+            <div class="icon-circle purple-bg">📖</div>
+            <span class="card-label">TALLERES Y ACTIVIDADES</span>
+            <span class="card-info">Asignadas por el docente</span>
+        </button>
+    </div>
+  </div>
+
+  <div id="view-lec-list" class="container">
+    <button class="btn-back" onclick="navegarA('int')">🔙 Regresar</button>
+    <div style="text-align:center; font-weight:900; margin-bottom:15px; color:#6a1b9a;">TALLERES ASIGNADOS</div>
+    <div id="lista-talleres-firebase" style="display: flex; flex-direction: column; gap: 12px;"></div>
+  </div>
+
+  <div id="view-taller-activo" class="container">
+    <button class="btn-back" onclick="navegarA('lec-list')">🔙 Salir del Taller</button>
+    <div id="taller-titulo" style="font-weight:900; color:#1b5e20; text-align:center; margin-bottom:15px; font-size:18px;"></div>
+    <div id="taller-contenido" class="lectura-texto"></div>
+    <div id="taller-preguntas"></div>
+    <button class="btn blue" id="btnFinalizarTaller" onclick="evaluarTallerLectura()">ENVIAR RESPUESTAS</button>
+  </div>
+
+  <div id="successTaller" class="success-overlay" style="background: rgba(106, 27, 154, 0.95);">
+    <div style="background: white; padding: 30px 20px; border-radius: 24px; text-align: center; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
+      <h2 style="color: #6a1b9a; font-weight: 900; font-size: 24px; margin: 0 0 10px 0;">¡Excelente trabajo!</h2>
+      <p id="successTallerText" style="color: #475569; font-size: 14px; font-weight: 700; white-space: pre-line; margin-bottom: 20px; line-height: 1.5;"></p>
+      <button class="btn" style="background: #6a1b9a; color: white; width: auto; padding: 12px 30px; font-size: 14px;" onclick="cerrarSuccessTaller()">CONTINUAR 🚀</button>
+    </div>
+  </div>
+
+  <div id="modal-aviso-zoom" onclick="cerrarNotaGrande()">
+    <div id="zoom-content" class="note-large" onclick="event.stopPropagation()">
+      <div class="note-pin"></div>
+      <div id="zoom-multimedia"></div>
+      <div id="zoom-text"></div>
+      <button class="btn sec" style="margin-top:20px; padding:10px; font-size:12px; width:auto;" onclick="cerrarNotaGrande()">CERRAR</button>
+    </div>
+  </div>
+
+  <div class="footer-container"><div class="footer-text">Familia y escuela caminamos juntos</div><div style="font-size:10px; color:#1b5e20; opacity:0.7;">© 2026 Santa Juana Digital</div></div>
+
+  <div id="modalSoporte" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9000; overflow-y:auto;"><div style="background:#263238; color:white; padding:20px; text-align:center; position:sticky; top:0;"><button onclick="cerrarSoporte()" style="position:absolute; left:15px; top:18px; background:none; border:none; color:white; font-size:24px;">✕</button>Soporte Técnico</div><div style="padding:20px;"><div id="sop_menu" style="text-align:center;"><a href="https://roscar33.github.io/Asistenciapapas/" target="_blank"><button class="btn" style="background:#2e7d32; margin-bottom:12px;">PLANILLAS ASAMBLEAS</button></a><a href="https://roscar33.github.io/Horario/" target="_blank"><button class="btn blue" style="margin-bottom:12px;">📅 HORARIO ESCOLAR</button></a><a href="https://roscar33.github.io/Utiles2026/" target="_blank"><button class="btn blue" style="margin-bottom:12px;">📚 ÚTILES ESCOLARES</button></a><button class="btn" onclick="irAFormSop()">✉️ CONTACTAR DOCENTE</button><button class="btn sec" style="margin-top:12px;" onclick="irAHistorialSop()">📬 VER RESPUESTAS</button></div><div id="sop_form" style="display:none;"><input id="msg_fecha" type="date"><input id="msg_asunto" type="text" placeholder="Asunto"><textarea id="msg_texto" rows="4"></textarea><div class="sig-wrap"><canvas id="sigSoporte"></canvas><button class="btn sec" onclick="limpiarPad('sigSoporte')">Borrar</button></div><button class="btn" onclick="enviarMensajeSoporte()">ENVIAR</button></div><div id="sop_history" style="display:none;"><div id="listaMensajesSop"></div><button class="btn sec" onclick="irAMenuSop()">VOLVER</button></div></div></div>
+  <div id="modalPreguntaTarea" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9500; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:25px; border-radius:24px; width:100%; max-width:350px;"><h3 style="color:#1b5e20;">Duda sobre Tarea</h3><p id="tituloTareaPregunta" style="font-size:12px; font-weight:bold;"></p><textarea id="textoPregunta" rows="4"></textarea><div style="display:flex; gap:10px;"><button class="btn sec" onclick="document.getElementById('modalPreguntaTarea').style.display='none'">Cerrar</button><button class="btn" onclick="enviarPregunta()">Enviar</button></div></div></div>
+  <div id="modalFechas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9600; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; padding:20px;"><div style="background:white; border-radius:24px; width:100%; max-width:320px; overflow:hidden;"><div id="txtTituloModalFechas" style="background:#1b5e20; color:white; padding:15px; font-weight:900;"></div><ul id="containerListaFechas" style="list-style:none; padding:15px; text-align:left; margin:0; max-height:300px; overflow-y:auto;"></ul><button class="btn" style="border-radius:0;" onclick="cerrarModalFechas()">CERRAR</button></div></div>
+  <div id="successAsis" class="success-overlay" style="background: rgba(27, 94, 32, 0.98);"><h2>✅ ¡Envío Exitoso!</h2><p style="padding:0 20px;">Se recuerda a los padres de familia que las ausencias implican la responsabilidad de ponerse al día con las actividades y compromisos escolares.</p><button class="btn" style="background:white; color:#1b5e20; width:fit-content;" onclick="location.reload()">ENTENDIDO</button></div>
+  <div id="successMsg" class="success-overlay" style="background: rgba(0, 119, 189, 0.98);"><h2>✅ Mensaje Enviado</h2><p>Docente responderá pronto.</p><button class="btn" style="background:white; color:#0277bd; width:fit-content;" onclick="cerrarSuccessMsg()">ENTENDIDO</button></div>
+  <div id="overlaySem" class="success-overlay" style="background: rgba(0,0,0,0.9);"><div style="background:white; padding:30px; border-radius:24px; color:#333; width:90%;"><h2 style="color:#d32f2f;">ADVERTENCIA</h2><p id="semText" style="white-space:pre-line;"></p><button class="btn" onclick="location.reload()">ENTENDIDO</button></div></div>
+
+<script>
+  let estActualDoc = ""; let periodoAsis = 1; let estSop = null; const pads = new Map(); let cacheFechas = { I: [], E: [] };
+  let docAlertaActual = ""; let periodoNotasActual = 1; let gradoEstudianteActual = ""; let cacheTareasAgenda = []; let currentTaskId = null; let currentTaskTitle = null;
+  let tallerEnCurso = null; 
+
+  window.onload = function() { const saved = localStorage.getItem("padre_doc"); if(saved) { document.getElementById("globalDocInput").value = saved; document.getElementById("chkGlobalSave").checked = true; } };
+
+  function iniciarSesionApp() {
+    const doc = document.getElementById("globalDocInput").value.trim(); const est = estudiantesValidos.find(e => e.doc === doc); if(!est) return alert("Documento no encontrado.");
+    if(document.getElementById("chkGlobalSave").checked) localStorage.setItem("padre_doc", doc);
+    estActualDoc = doc; docAlertaActual = doc; gradoEstudianteActual = est.grado; estSop = est;
+    document.getElementById("inst-title").innerText = est.nombre; document.getElementById("inst-sub").innerText = "GRADO: " + est.grado;
+    document.getElementById("login-section").style.display = "none"; document.getElementById("main-dashboard").style.display = "grid";
+    cargarTableroAvisos();
+  }
+
+  function navegarA(seccion) { document.querySelectorAll('.container').forEach(c => c.style.display = "none"); document.getElementById("main-dashboard").style.display = "none"; document.getElementById("view-" + seccion).style.display = "block"; if(seccion === 'exc') activarFormularioExcusa(); if(seccion === 'obs') buscarObservaciones(); if(seccion === 'piz') iniciarCargaAlerta(); }
+  function volverAlMenu() { document.querySelectorAll('.container').forEach(c => c.style.display = "none"); document.getElementById("main-dashboard").style.display = "grid"; }
+
+  function formatDateFriendly(dateStr) { if(!dateStr) return ''; const parts = dateStr.split('-'); if(parts.length !== 3) return dateStr; const date = new Date(parts[0], parts[1] - 1, parts[2]); return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+  function consultarPorWhatsApp(titulo, area) { const telefonoDocente = "573012901456"; const nombreEstudiante = estSop ? estSop.nombre : "el estudiante"; const grado = gradoEstudianteActual; const mensaje = `Hola profe 👋. Soy *${nombreEstudiante}* del grado *${grado}*.\n\nTengo una inquietud sobre la actividad de *${area}*: "${titulo}". \n\nQuedo atento, muchas gracias.`; const url = `https://wa.me/${telefonoDocente}?text=${encodeURIComponent(mensaje)}`; window.open(url, '_blank'); }
+
+  function cargarTableroAvisos() {
+    const div = document.getElementById("dashboard-avisos");
+    let nombreAmigable = "Estudiante";
+    if (estSop && estSop.nombre) { const partes = estSop.nombre.trim().split(/\s+/); if (partes.length >= 3) { const apellidos = partes.slice(0, 2).join(" "); const nombres = partes.slice(2).join(" "); nombreAmigable = nombres + " " + apellidos; } else { nombreAmigable = estSop.nombre; } }
+    db.collection("tableroAvisos").orderBy("timestamp", "desc").limit(10).onSnapshot(snap => {
+      div.innerHTML = "";
+      if(snap.empty) { div.innerHTML = "<div class='sticky-note note-yellow'><div class='note-pin'></div>Sin avisos.</div>"; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.archived) return;
+        if (d.publishAt && new Date(d.publishAt) > new Date()) return; 
+        if (d.expiresAt && new Date(d.expiresAt) < new Date()) return; 
+        const scope = d.scope || 'General';
+        const targetGrades = d.targetGrades || [];
+        const targetDoc = d.targetStudentDoc || '';
+        const esGeneral = scope === 'General';
+        const esMiGrado = scope === 'Grado' && targetGrades.includes(gradoEstudianteActual);
+        const esParaMi = scope === 'Individual' && targetDoc === estActualDoc;
         
-        <div class="card p-4 space-y-3">
-            <h2 class="text-[11px] font-black uppercase text-stone-400">Filtros de Resultados</h2>
-            <div class="flex gap-2 bg-stone-100 p-1.5 rounded-xl mb-2">
-                <button onclick="setFiltroResEstado('activos')" id="filtro-res-activos" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg bg-white shadow-sm text-purple-900 transition-all">Notas Activas</button>
-                <button onclick="setFiltroResEstado('archivados')" id="filtro-res-archivados" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg text-stone-500 hover:bg-white transition-all">Notas Archivadas</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input type="text" id="buscarEstudiante" placeholder="Buscar por nombre..." class="w-full text-xs font-bold p-3" onkeyup="renderizarResultados()">
-                <select id="buscarGrado" class="w-full text-xs font-bold p-3" onchange="renderizarResultados()">
-                    <option value="">Todos los Grados</option>
-                    <option value="Primero">Primero</option><option value="Segundo">Segundo</option>
-                    <option value="Tercero">Tercero</option><option value="Cuarto">Cuarto</option><option value="Quinto">Quinto</option>
-                </select>
-            </div>
-            <button onclick="descargarReporteGeneralPDF()" class="w-full bg-[#1b5e20] text-white text-[10px] font-black px-4 py-3 rounded-xl uppercase shadow-lg flex items-center justify-center gap-2 active:scale-95 mt-2">📄 Descargar Planilla Filtrada (PDF)</button>
-        </div>
+        if (!esGeneral && !esMiGrado && !esParaMi) return;
 
-        <div id="listaResultados" class="space-y-4"></div>
-    </div>
-  </main>
-
-  <script>
-    const firebaseConfig = { apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8", authDomain: "diariodeprocesos-6f78d.firebaseapp.com", projectId: "diariodeprocesos-6f78d" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    let tallerEditandoId = null;
-
-    // BASE DE DATOS LOCAL PARA INDIVIDUALIZAR
-    const estudiantesValidos = [
-        { doc: "1042155626", nombre: "MARTINEZ ARANGO AYLYN", grado: "Primero" }, { doc: "1041636979", nombre: "OSORIO MUÑOZ JERONIMO", grado: "Primero" },
-        { doc: "1041636870", nombre: "GONZALEZ BETANCUR MARIA JOSE", grado: "Segundo" }, { doc: "1042155380", nombre: "GUTIERREZ CHAVARRIA JOSE LEANDRO", grado: "Segundo" },
-        { doc: "1041636841", nombre: "VARELAS BARRIENTOS LUCIANA", grado: "Segundo" }, { doc: "1041636641", nombre: "MARTINEZ MARTINEZ SEBASTIAN", grado: "Segundo" },
-        { doc: "1035922719", nombre: "MOLINA OCHOA BELEN", grado: "Tercero" }, { doc: "1067959648", nombre: "PACHECO BARRERA JOSE DANIEL", grado: "Tercero" },
-        { doc: "1032328826", nombre: "LOPERA CADAVID LUCIANA", grado: "Segundo" }, { doc: "1042155250", nombre: "CASAS FERNANDEZ ANTONELLA", grado: "Cuarto" },
-        { doc: "1035801483", nombre: "RESTREPO VILLA DILMER FELIPE", grado: "Cuarto" }, { doc: "1157463842", nombre: "BERRIO CORREA VALENTINA", grado: "Quinto" },
-        { doc: "1038213324", nombre: "GUZMAN CORREA DYLAN", grado: "Quinto" }, { doc: "1041636021", nombre: "VARELAS BARRIENTOS MAXIMILIANO", grado: "Quinto" },
-        { doc: "12345678", nombre: "PEDRO PEREZ", grado: "Quinto" }
-    ];
-
-    window.onload = function() {
-        const selectDoc = document.getElementById("targetStudentDoc");
-        estudiantesValidos.forEach(e => {
-            selectDoc.innerHTML += `<option value="${e.doc}">${e.nombre} (${e.grado})</option>`;
-        });
-        cargarTalleres();
-    };
-
-    function switchTab(tab) {
-        document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
-        document.getElementById('view-resultados').classList.toggle('hidden', tab !== 'resultados');
-        document.getElementById('tab-editor').className = tab === 'editor' ? 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm' : 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive';
-        document.getElementById('tab-resultados').className = tab === 'resultados' ? 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm' : 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive';
-        if(tab === 'resultados') cargarResultados();
-    }
-
-    function toggleGradoSel(btn, isTodos = false) {
-        if(isTodos) {
-            document.querySelectorAll('.badge-grado').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
+        if (d.isTallerNotice) {
+            const areaMatch = d.mensaje.match(/📍 Área: (.*)/);
+            const workMatch = d.mensaje.match(/📝 Trabajo: (.*)/);
+            const dateMatch = d.mensaje.match(/⏳ Cierre: (.*)/);
+            const area = areaMatch ? areaMatch[1] : 'General';
+            const work = workMatch ? workMatch[1] : 'Actividad';
+            const date = dateMatch ? dateMatch[1] : '';
+            div.innerHTML += `<div class="wood-board" onclick='navegarA("int"); cerrarNotaGrande()'><div class="metal-clip"></div><div class="parchment-paper" style="background: #f3e5f5; border-color: #ce93d8;"><div class="parchment-header" style="border-bottom: 2px solid #6a1b9a;"><div class="parchment-title" style="color: #6a1b9a;">🎮 NUEVA ACTIVIDAD</div><div style="text-align:center; font-size:9px; font-weight:600; opacity:0.8; color: #4a148c;">Escuela Interactiva</div></div><div class="parchment-body"><div class="parchment-row" style="border-bottom: 1px dashed #e1bee7;"><span class="parchment-label" style="color: #6a1b9a;">Actividad</span><span class="parchment-val">${work}</span></div><div class="parchment-row" style="border-bottom: 1px dashed #e1bee7;"><span class="parchment-label" style="color: #6a1b9a;">Área</span><span class="parchment-val">${area}</span></div><div class="parchment-row"><span class="parchment-label" style="color: #6a1b9a;">Vencimiento</span><span class="parchment-val" style="color:#d32f2f;">⏳ ${date}</span></div></div><div class="parchment-footer" style="color: #6a1b9a; background: #e1bee7; padding: 4px; border-radius: 4px; margin-top: 5px; font-weight: bold; cursor:pointer;">👉 Toca aquí para resolver</div></div></div>`;
+        } 
+        else if (d.isSystemNotice) {
+            const areaMatch = d.mensaje.match(/📍 Área: (.*)/);
+            const workMatch = d.mensaje.match(/📝 Trabajo: (.*)/);
+            const dateMatch = d.mensaje.match(/🗓️ (.*)/);
+            const area = areaMatch ? areaMatch[1] : 'General';
+            const work = workMatch ? workMatch[1] : 'Actividad';
+            let date = dateMatch ? dateMatch[1] : 'Ver Agenda';
+            if(date.includes('-') && date.length === 10) date = formatDateFriendly(date);
+            let paperClass = 'parchment-paper white-style';
+            div.innerHTML += `<div class="wood-board" onclick='abrirZoom(${JSON.stringify(d).replace(/'/g, "&#39;")})'><div class="metal-clip"></div><div class="${paperClass}"><div class="parchment-header"><div class="parchment-title">⚠️ ATENCIÓN</div><div style="text-align:center; font-size:9px; font-weight:600; opacity:0.8;">Nueva actividad en plataforma</div></div><div class="parchment-body"><div class="parchment-row"><span class="parchment-label">Actividad</span><span class="parchment-val">${work}</span></div><div class="parchment-row"><span class="parchment-label">Área</span><span class="parchment-val">${area}</span></div><div class="parchment-row"><span class="parchment-label">Entrega</span><span class="parchment-val">🗓️ ${date}</span></div></div><div class="parchment-footer">Ingresa a la agenda para visualizar todos los detalles. ¡Exitos!</div></div></div>`;
         } else {
-            const btnTodos = document.querySelector('.badge-grado[value="Todos"]');
-            if(btnTodos) btnTodos.classList.remove('selected');
-            btn.classList.toggle('selected');
+            let badgeHtml = "";
+            if (scope === 'General') { badgeHtml = `<div class="heart-badge">🌎 GLOBAL</div>`; } 
+            else if (scope === 'Grado') { badgeHtml = `<div class="heart-badge" style="background: #fff9c4; color: #f57f17;">👨‍👧‍👦 GRUPO</div>`; } 
+            else if (scope === 'Individual') { badgeHtml = `<div class="heart-badge">👤 ${nombreAmigable}</div>`; }
+            let likeBtn = "";
+            if (scope !== 'General') { const liked = (d.likes || []).includes(estActualDoc); likeBtn = `<button class="like-btn" onclick="toggleLike('${doc.id}', event)">${liked ? "❤️" : "🤍"}</button>`; }
+            let multimediaHtml = "";
+            if(d.imageUrl) multimediaHtml = `<div class="polaroid-frame"><img src="${d.imageUrl}" class="polaroid-img"></div>`;
+            if(d.videoUrl) multimediaHtml += `<div class="video-indicator">▶️</div>`;
+            let colorClass = "note-yellow";
+            if (d.color === 'pink') colorClass = "note-pink"; else if (d.color === 'blue') colorClass = "note-blue"; else if (d.color === 'green') colorClass = "note-green"; else if (d.color === 'orange') colorClass = "note-orange"; else if (d.color === 'red') colorClass = "note-red"; else if (d.color === 'purple') colorClass = "note-purple"; else if (d.color === 'teal') colorClass = "note-teal"; else if (d.color === 'lime') colorClass = "note-lime"; else if (d.color === 'white') colorClass = "note-white"; else if (d.color === 'brown') colorClass = "note-brown";
+            div.innerHTML += `<div class="sticky-note ${colorClass}" onclick='abrirZoom(${JSON.stringify(d).replace(/'/g, "&#39;")})'>${badgeHtml}${likeBtn}<div class="note-pin"></div>${multimediaHtml}<div class="note-text">${d.mensaje}</div></div>`;
         }
-    }
+      });
+    });
+  }
 
-    function agregarPregunta(tipo, data = null) {
-      const id = Date.now() + Math.random();
-      const div = document.createElement('div');
-      div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${tipo === 'multiple' ? 'border-purple-100 bg-white' : (tipo === 'abierta' ? 'border-blue-100 bg-blue-50/30' : 'border-green-100 bg-green-50/30')}`;
-      div.id = `pregunta-${id}`;
-      div.dataset.tipo = tipo;
-      let html = `<button onclick="this.parentElement.remove()" class="absolute top-3 right-3 text-stone-300 hover:text-red-500">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="Enunciado de la pregunta..." class="w-full mb-4 text-xs font-bold q-text">`;
-      if (tipo === 'multiple') {
-        html += `<div class="space-y-2"><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones.a:''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones.b:''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones.c:''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div></div>`;
-      } else if (tipo === 'verdadero_falso') {
-        html += `<div class="flex gap-4"><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="verdadero" ${data?.correcta==='verdadero'?'checked':(!data?'checked':'')}> Verdadero</label><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="falso" ${data?.correcta==='falso'?'checked':''}> Falso</label></div>`;
-      }
-      div.innerHTML = html; document.getElementById('contenedorPreguntas').appendChild(div);
-    }
+  async function toggleLike(id, e) { e.stopPropagation(); const docRef = db.collection("tableroAvisos").doc(id); const docSnap = await docRef.get(); if (!docSnap.exists) return; const likes = docSnap.data().likes || []; if (!likes.includes(estActualDoc)) { await docRef.update({ likes: firebase.firestore.FieldValue.arrayUnion(estActualDoc) }); } }
 
-    async function guardarTaller(status) {
-        const grados = Array.from(document.querySelectorAll('.badge-grado.selected')).map(b => b.getAttribute('value'));
-        const titulo = document.getElementById('tituloTaller').value;
-        const fechaVencimiento = document.getElementById('fechaVencimiento').value;
-        const texto = document.getElementById('textoLectura').value;
-        const tipo = document.getElementById('tipoActividad').value;
-        const area = document.getElementById('areaConocimiento').value;
-        const targetStudentDoc = document.getElementById('targetStudentDoc').value;
+  function abrirZoom(data) {
+    const modal = document.getElementById("modal-aviso-zoom");
+    const content = document.getElementById("zoom-content");
+    content.innerHTML = ''; content.className = "note-large"; 
+    if (data.isSystemNotice) {
+       content.classList.add("wood-board-modal");
+       const areaMatch = data.mensaje.match(/📍 Área: (.*)/);
+       const workMatch = data.mensaje.match(/📝 Trabajo: (.*)/);
+       const dateMatch = data.mensaje.match(/🗓️ (.*)/);
+       const area = areaMatch ? areaMatch[1] : 'General';
+       const work = workMatch ? workMatch[1] : 'Actividad';
+       let date = dateMatch ? dateMatch[1] : '';
+       if(date.includes('-') && date.length === 10) date = formatDateFriendly(date);
+       content.innerHTML = `<div class="metal-clip" style="top: -15px;"></div><div class="parchment-paper white-style" style="min-height: 350px; justify-content: center;"><div class="parchment-header"><div class="parchment-title" style="font-size: 24px;">⚠️ ATENCIÓN</div><div style="text-align:center; font-size:12px; margin-bottom:10px; font-weight:600; opacity:0.8;">Nueva actividad en plataforma</div></div><div class="parchment-body" style="font-size: 16px;"><div class="parchment-row" style="margin-bottom: 15px;"><span class="parchment-label" style="font-size: 11px;">Actividad</span><span class="parchment-val" style="font-size: 18px;">${work}</span></div><div class="parchment-row" style="margin-bottom: 15px;"><span class="parchment-label" style="font-size: 11px;">Área</span><span class="parchment-val" style="font-size: 18px;">${area}</span></div><div class="parchment-row" style="margin-bottom: 15px;"><span class="parchment-label" style="font-size: 11px;">Fecha de Entrega</span><span class="parchment-val" style="font-size: 18px;">🗓️ ${date}</span></div></div><div class="parchment-footer" style="font-size: 12px; margin-top: 20px;">Ingresa a la agenda para visualizar todos los detalles. ¡Exitos!</div><button class="btn sec" style="margin-top:20px; padding:10px; font-size:12px; width:100%;" onclick="cerrarNotaGrande()">CERRAR</button></div>`;
+    } else {
+       let colorClass = "note-yellow";
+       if (data.color === 'pink') colorClass = "note-pink"; else if (data.color === 'blue') colorClass = "note-blue"; else if (data.color === 'green') colorClass = "note-green"; else if (data.color === 'orange') colorClass = "note-orange"; else if (data.color === 'red') colorClass = "note-red"; else if (data.color === 'purple') colorClass = "note-purple"; else if (data.color === 'teal') colorClass = "note-teal"; else if (data.color === 'lime') colorClass = "note-lime"; else if (data.color === 'white') colorClass = "note-white"; else if (data.color === 'brown') colorClass = "note-brown";
+       content.classList.add(colorClass);
+       let multiHtml = '';
+       if(data.imageUrl) { multiHtml += `<img src="${data.imageUrl}" class="zoom-photo" onclick="this.classList.toggle('zoom-active')"><a href="${data.imageUrl}" download="Imagen_Periodico.png" style="text-decoration:none;"><button class="btn blue" style="padding:10px; font-size:12px; margin-bottom:10px; width:100%;">⬇️ DESCARGAR IMAGEN</button></a>`; }
+       if(data.videoUrl) { const vidId = getYouTubeId(data.videoUrl); if(vidId) multiHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${vidId}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`; }
+       content.innerHTML = `<div class="note-pin"></div><div id="zoom-multimedia">${multiHtml}</div><div id="zoom-text" style="white-space: pre-line;">${data.mensaje}</div><button class="btn sec" style="margin-top:20px; padding:10px; font-size:12px; width:auto;" onclick="cerrarNotaGrande()">CERRAR</button>`;
+    }
+    modal.style.display = "flex";
+  }
+
+  function cerrarNotaGrande() { document.getElementById("modal-aviso-zoom").style.display = "none"; }
+  function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
+
+  function formatearFecha(f) { if(!f) return ""; const d = new Date(f + "T00:00:00"); return d.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+  function getYouTubeEmbedUrl(url) { if (!url) return null; let id = ''; try { if (url.includes('v=')) id = url.split('v=')[1].split('&')[0]; else if (url.includes('youtu.be/')) id = url.split('youtu.be/')[1].split('?')[0]; return id ? `https://www.youtube.com/embed/${id}` : null; } catch (e) { return null; } }
+  function getAreaStyle(a) { const area = (a || '').toUpperCase(); if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#e0f2fe', text: '#0369a1' }; if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#e11d48', badge: '#ffe4e6', text: '#be123c' }; if(area.includes('NATURALES')) return { border: '#059669', badge: '#d1fae5', text: '#047857' }; if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#fef3c7', text: '#b45309' }; return { border: '#94a3b8', badge: '#f1f5f9', text: '#475569' }; }
+  function formatTaskDescription(text) { if (!text) return "Sin descripción detallada."; const lines = text.split('\n'); let finalHtml = ''; lines.forEach(line => { let trimmedLine = line.trim(); if (!trimmedLine) { finalHtml += '<div class="paragraph-spacer"></div>'; return; } const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/); if (bulletMatch) { let content = bulletMatch[1]; content = content.replace(/\b([A-ZÁÉÍÓÚÑ\s]{4,})\b/g, '<span class="caps-highlight">$1</span>'); finalHtml += `<div class="bullet-row"><span class="bullet-dot">●</span><span>${content}</span></div>`; } else { let content = trimmedLine.replace(/\b([A-ZÁÉÍÓÚÑ\s]{4,})\b/g, '<span class="caps-highlight">$1</span>'); finalHtml += `<span>${content}</span><br>`; } }); return finalHtml; }
+
+  async function activarFormularioExcusa() { const est = estudiantesValidos.find(e => e.doc === estActualDoc); document.getElementById("nombreExc").innerText=est.nombre; const snapC = await db.collection("configuracionGlobal").doc("asistencia").get(); periodoAsis = snapC.exists ? (snapC.data().periodoActual || 1) : 1; document.getElementById("periodoAsisLabel").innerText="PERIODO ACTUAL #"+periodoAsis; consultarStats(estActualDoc); initPad('sigExc'); }
+  async function consultarStats(di) { const snap = await db.collection("controlAsistencia").where("periodo", "==", periodoAsis).get(); let f=0, e=0; cacheFechas.I=[]; cacheFechas.E=[]; snap.forEach(d => { const reg = (d.data().detalles || []).find(x => x.doc === di); if(reg?.estado==='I'){ f++; cacheFechas.I.push(d.data().fecha); } if(reg?.estado==='E'){ e++; cacheFechas.E.push(d.data().fecha); } }); document.getElementById("statFallas").innerText=f; document.getElementById("statExcusas").innerText=e; }
+  function mostrarListadoFechas(tipo) { const arr=(tipo==='I')?cacheFechas.I:cacheFechas.E; document.getElementById("txtTituloModalFechas").innerText=(tipo==='I')?"FECHAS DE FALLAS":"FECHAS DE EXCUSAS"; const c=document.getElementById("containerListaFechas"); c.innerHTML=arr.length?arr.map(f=>`<li>📅 ${formatearFecha(f)}</li>`).join(""):"<li>Sin registros.</li>"; document.getElementById("modalFechas").style.display="flex"; }
+  function cerrarModalFechas() { document.getElementById("modalFechas").style.display="none"; }
+  async function enviarExcusa() { const fecha = document.getElementById("fechaExc").value; const motivo = document.getElementById("motivoExc").value; const detalle = document.getElementById("detalleExc").value; const p = pads.get('sigExc'); if (!fecha || !motivo || !detalle.trim()) return alert("Por favor complete todos los campos antes de enviar."); if(!p?.hasData) return alert("Firme el recuadro."); await db.collection("excusasInasistencia").add({ documentoEstudiante: estActualDoc, fechaInasistencia: fecha, motivoTipo: motivo, motivoDetalle: detalle, firmaAcudiente: p.c.toDataURL(), timestamp: new Date().toISOString() }); document.getElementById("successAsis").style.display="flex"; }
+
+  async function buscarObservaciones() { const docId = estActualDoc; const out = document.getElementById("resultadoObs"); out.innerHTML = "Cargando..."; const cSnap = await db.collection("configuracionCiclos").doc(docId).get(); const cAct = cSnap.exists ? (cSnap.data().cicloActual || 1) : 1; db.collection("registrosComportamentales").where("documentoEstudiante", "==", docId).onSnapshot(snap => { let list = []; snap.forEach(d => { if(d.data().ciclo == cAct) list.push({ id: d.id, ...d.data() }); }); let obsL = list.sort((a, b) => (a.timestamp || "").localeCompare(b.timestamp || "")); if(obsL.length === 0) { out.innerHTML = `<div style='text-align:center; padding:20px;'>No hay anotaciones en el ciclo #${cAct}</div>`; return; } out.innerHTML = `<p style='font-size:11px; font-weight:bold; color:#1b5e20;'>CICLO ACTUAL: #${cAct}</p>` + obsL.reverse().map((r, index) => { let n = obsL.length - index; let color = (n >= 3) ? "#d32f2f" : (n === 2 ? "#f97316" : "#2e7d32"); return `<div style="border:1.5 solid ${color}; border-radius:18px; overflow:hidden; margin-top:15px; background:#fff;"><div style="background:${color}; color:white; padding:10px 15px; font-weight:900; display:flex; justify-content:space-between; font-size:12px;"><span>OBSERVACIÓN N° ${n}</span></div><div style="padding:15px; font-size:13px;"><b>Fecha:</b> ${formatearFecha(r.fecha)}<br><div style="margin-top:10px; font-weight:900; font-size:10px; opacity:0.6;">HECHOS:</div><div style="background:#fcfcfc; padding:10px; border-radius:10px; border-left:4px solid ${color};">${r.comportamiento}</div><div style="margin-top:10px; font-weight:900; font-size:10px; opacity:0.6;">DESCARGOS:</div><div style="background:#fcfcfc; padding:10px; border-radius:10px; border-left:4px solid #ccc;">${r.descargos || "N/A"}</div>${!r.firmaAcudiente?`<div class="sig-wrap"><canvas id="cv_${r.id}"></canvas><button class="btn" onclick="firmarObs('${r.id}','${docId}',${cAct})">FIRMAR</button></div>`:`<div style="text-align:center; margin-top:10px;"><img src="${r.firmaAcudiente}" height="50"></div>`}</div></div>`; }).join(""); setTimeout(()=>obsL.forEach(r=>{if(!r.firmaAcudiente)initPad('cv_'+r.id)}),500); }); }
+  async function firmarObs(id, dI, c) { const p=pads.get('cv_'+id); if(!p?.hasData) return alert("Firme."); await db.collection("registrosComportamentales").doc(id).update({ firmaAcudiente: p.c.toDataURL(), fechaFirma: new Date().toISOString() }); const snap = await db.collection("registrosComportamentales").where("documentoEstudiante", "==", dI).get(); let n=0; snap.forEach(d=>{if(d.data().ciclo==c)n++}); mostrarSem(n); }
+  function mostrarSem(n) { const m12 = "Advertencia sobre conducta."; const m3 = "Citación oficial por acumulación de anotaciones."; document.getElementById("semText").innerText = n>=3?m3:m12; document.getElementById("overlaySem").style.display="flex"; }
+
+  async function iniciarCargaAlerta() { document.getElementById("aaNombre").innerText = estudiantesValidos.find(e=>e.doc===docAlertaActual).nombre; await cargarPeriodoNotasActual(); cargarNotasBajasPeriodo(docAlertaActual); cargarAgendaEscolar(gradoEstudianteActual); }
+  async function cargarPeriodoNotasActual() { const snap = await db.collection("configuracionGlobal").doc("notas").get(); periodoNotasActual = snap.exists ? (snap.data().periodoActual || 1) : 1; }
+  async function cargarNotasBajasPeriodo(docEst) { document.getElementById("aaBadge").innerText = `PERIODO ACTUAL #${periodoNotasActual}`; const div = document.getElementById("aaLista"); div.innerHTML = "Cargando..."; const snap = await db.collection("notasAcademicas").where("documentoEstudiante", "==", docEst).where("periodo", "==", periodoNotasActual).get(); let items = []; snap.forEach(d => { const r = d.data(); let n = r.nota; if (typeof n === "string") n = parseFloat(n.replace(",", ".")); if (n < 3) items.push({ area: r.area.toUpperCase(), actividad: r.actividad || r.nombreActividad, nota: n, observacion: r.observacion || "" }); }); if (items.length === 0) { div.innerHTML = `<div style="text-align:center;padding:30px;opacity:0.6;">✅ Todo al día.</div>`; return; } div.innerHTML = items.map(it => `<div style="background:#fff; border:1.5 solid #fee2e2; border-left:6px solid #dc2626; border-radius:16px; margin-bottom:12px; padding:15px;"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div><div style="font-size:10px; font-weight:800; color:#991b1b;">${it.area}</div><div style="font-size:14px; font-weight:900;">${it.actividad}</div></div><div style="background:#fef2f2; color:#b91c1c; border:1.5 solid #fecaca; padding:4px 10px; border-radius:10px; font-weight:900;">${it.nota.toFixed(1).replace(".", ",")}</div></div><div class="agenda-task-desc" style="font-size: 12px; padding: 12px; margin-top: 10px;">${formatTaskDescription(it.observacion)}</div></div>`).join(""); }
+  
+  function esTareaVencida(fechaStr) { if (!fechaStr) return false; const ahora = new Date(); const vencimiento = new Date(fechaStr + "T23:59:59"); return ahora > vencimiento; }
+
+  async function cargarAgendaEscolar(grado) { 
+      const div = document.getElementById("aaAgendaLista"); div.innerHTML = "Cargando agenda..."; 
+      const snap = await db.collection("agendaEscolar").where("gradeLevel", "==", grado).where("archived", "==", false).get(); 
+      const msgsSnap = await db.collection("mensajesAgenda").where("studentDoc", "==", docAlertaActual).get(); 
+      const convMap = {}; msgsSnap.forEach(doc => { convMap[doc.data().taskId] = doc.data(); }); 
+      let tareas = []; snap.forEach(d => tareas.push({ id: d.id, ...d.data() })); 
+      let filtered = tareas.filter(t => { if (esTareaVencida(t.date)) return false; if (t.publishAt && new Date(t.publishAt) > new Date()) return false; return (!t.targetStudent || t.targetStudent === docAlertaActual) && t.status !== 'draft' && t.publico !== false; }); 
+      const order = document.getElementById("agendaSortOrder").value; 
+      if(order === "prox") { filtered.sort((a,b) => (a.date || "").localeCompare(b.date || "")); } else if (order === "lejos") { filtered.sort((a,b) => (b.date || "").localeCompare(a.date || "")); } else { filtered.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); } 
+      cacheTareasAgenda = filtered; if(filtered.length === 0) { div.innerHTML = "<p style='text-align:center;'>No hay tareas pendientes.</p>"; return; } 
+      div.innerHTML = filtered.map(t => { const conv = convMap[t.id]; const colors = getAreaStyle(t.area); const videoUrl = getYouTubeEmbedUrl(t.videoLink); let chatHtml = ""; if (conv && conv.conversacion) { chatHtml = `<div style="margin-top:10px; max-height:150px; overflow-y:auto; background:#f8fafc; padding:8px; border-radius:12px; display:flex; flex-direction:column; gap:5px;">` + conv.conversacion.map(m => `<div style="padding:6px 10px; border-radius:10px; font-size:11px; max-width:85%; ${m.rol==='docente'?'align-self:flex-start; background:#e0f2fe; color:#0369a1;':'align-self:flex-end; background:#dcfce7; color:#166534;'}"><b style="display:block; font-size:9px; opacity:0.6;">${m.rol==='docente'?'Profe':'Tú'}</b>${m.texto}</div>`).join("") + `</div>`; } return `<div style="border:1.5px solid #eee; border-left:6px solid ${colors.border}; border-radius:20px; padding:18px; margin-bottom:18px; background:#fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);"><span style="font-size:10px; font-weight:900; padding:4px 10px; border-radius:8px; background:${colors.badge}; color:${colors.text}; text-transform:uppercase;">${t.area || 'General'}</span><div style="margin:12px 0 8px; font-size:12px; font-weight:700; color:#c62828;">📅 Entrega: ${formatearFecha(t.date)}</div><div style="font-size:17px; font-weight:900; color:#1e293b; line-height:1.2;">${t.title}</div><div class="agenda-task-desc">${formatTaskDescription(t.description)}</div>${videoUrl ? `<div style="margin-top:15px; border-radius:15px; overflow:hidden; aspect-ratio:16/9; border:1px solid #ddd;"><iframe width="100%" height="100%" src="${videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : ''}${t.pdfLink ? `<a href="${t.pdfLink}" target="_blank" style="text-decoration:none;"><button class="btn" style="padding:12px; margin-top:15px; font-size:12px; background:#1b5e20;">📂 VER MATERIAL PDF</button></a>` : ''}${chatHtml}<div style="text-align:right; margin-top:15px;"><button style="background:#f1f5f9; border:1.5 solid #cbd5e1; padding:10px 16px; border-radius:50px; font-size:12px; font-weight:800; color:#475569; cursor:pointer;" onclick="consultarPorWhatsApp('${t.title.replace(/'/g, "\\'")}', '${t.area}')">💬 Chatear</button></div></div>`; }).join(""); 
+  }
+  function descargarAgendaPDF() { const doc = new window.jsPDF(); const est = estudiantesValidos.find(e => e.doc === docAlertaActual); doc.text("AGENDA ESCOLAR - " + (est ? est.nombre : ""), 10, 15); const body = cacheTareasAgenda.map(t => [t.area || "Gral", t.title, formatearFecha(t.date)]); doc.autoTable({ startY: 25, head: [['ÁREA', 'ACTIVIDAD', 'ENTREGA']], body, headStyles:{fillColor:[27,94,32]} }); doc.save(`Agenda_${docAlertaActual}.pdf`); }
+  async function enviarPregunta() { const txt = document.getElementById("textoPregunta").value.trim(); if (!txt) return alert("Escriba su duda."); const mRef = db.collection("mensajesAgenda"); const query = await mRef.where("taskId", "==", currentTaskId).where("studentDoc", "==", docAlertaActual).get(); const newMsg = { rol: 'user', texto: txt, timestamp: new Date().toISOString() }; if (!query.empty) { await mRef.doc(query.docs[0].id).update({ conversacion: firebase.firestore.FieldValue.arrayUnion(newMsg), lastUpdate: new Date().toISOString(), read: false }); } else { await mRef.add({ taskId: currentTaskId, taskTitle: currentTaskTitle, studentDoc: docAlertaActual, studentName: estSop.nombre, conversacion: [newMsg], lastUpdate: new Date().toISOString(), read: false, periodo: periodoNotasActual }); } alert("Duda enviada."); document.getElementById("textoPregunta").value = ""; document.getElementById("modalPreguntaTarea").style.display = "none"; cargarAgendaEscolar(gradoEstudianteActual); }
+  function switchTabAlerta(tab) { document.getElementById("view-aa-notas").style.display = tab === 'notas' ? 'block' : 'none'; document.getElementById("view-aa-agenda").style.display = tab === 'agenda' ? 'block' : 'none'; document.getElementById("tab-notas").classList.toggle('active', tab === 'notas'); document.getElementById("tab-agenda").classList.toggle('active', tab === 'agenda'); }
+  function abrirSoporte() { document.getElementById("modalSoporte").style.display="block"; }
+  function cerrarSoporte() { document.getElementById("modalSoporte").style.display="none"; }
+  function irAFormSop() { document.getElementById("sop_menu").style.display="none"; document.getElementById("sop_form").style.display="block"; initPad('sigSoporte'); }
+  function irAMenuSop() { document.getElementById("sop_form").style.display="none"; document.getElementById("sop_history").style.display="none"; document.getElementById("sop_menu").style.display="block"; }
+  function irAHistorialSop() { document.getElementById("sop_menu").style.display="none"; document.getElementById("sop_history").style.display="block"; db.collection("comunicacionPadres").where("documentoEstudiante", "==", estActualDoc).onSnapshot(snap => { let h = ""; snap.forEach(d => { const m = d.data(); h += `<div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:12px;"><b>${m.asunto}</b><br><p>${m.mensaje}</p></div>`; }); document.getElementById("listaMensajesSop").innerHTML = h || "Sin registros."; }); }
+  async function enviarMensajeSoporte() { const p=pads.get('sigSoporte'); if(!p?.hasData) return alert("Firme el mensaje."); await db.collection("comunicacionPadres").add({ documentoEstudiante: estActualDoc, nombreEstudiante: estSop.nombre, asunto: document.getElementById("msg_asunto").value, mensaje: document.getElementById("msg_texto").value, timestamp: new Date().toISOString() }); document.getElementById("modalSoporte").style.display="none"; document.getElementById("successMsg").style.display="flex"; }
+  function cerrarSuccessMsg() { document.getElementById("successMsg").style.display="none"; }
+  function initPad(id){ const c=document.getElementById(id); if(!c) return; const ctx=c.getContext("2d"); const r=window.devicePixelRatio||1; c.width=c.offsetWidth*r; c.height=160*r; ctx.setTransform(r,0,0,r,0,0); ctx.lineWidth=2.5; ctx.lineCap="round"; let d=false; const gP=(e)=>{ const rect=c.getBoundingClientRect(); return { x:(e.touches?e.touches[0].clientX:e.clientX)-rect.left, y:(e.touches?e.touches[0].clientY:e.clientY)-rect.top }; }; c.addEventListener("mousedown",(e)=>{d=true; ctx.beginPath(); const p=gP(e); ctx.moveTo(p.x,p.y);}); c.addEventListener("mousemove",(e)=>{if(!d)return; const p=gP(e); ctx.lineTo(p.x,p.y); ctx.stroke(); pads.set(id,{hasData:true,c});}); window.addEventListener("mouseup",()=>d=false); c.addEventListener("touchstart",(e)=>{e.preventDefault(); d=true; ctx.beginPath(); const p=gP(e); ctx.moveTo(p.x,p.y);}); c.addEventListener("touchmove",(e)=>{e.preventDefault(); if(!d)return; const p=gP(e); ctx.lineTo(p.x,p.y); ctx.stroke(); pads.set(id,{hasData:true,c});}); c.addEventListener("touchend",()=>d=false); pads.set(id,{hasData:false,c}); }
+  function limpiarPad(id) { const p=pads.get(id); if(p){ p.c.getContext("2d").clearRect(0,0,p.c.width,p.c.height); pads.set(id,{c:p.c,hasData:false}); } }
+
+  /* ==============================================================
+     INICIO LÓGICA DE COMPRENSIÓN LECTORA Y TALLERES CON MULTIMEDIA
+     ============================================================== */
+
+  async function abrirSeccionLectura() {
+    navegarA('lec-list');
+    const divLista = document.getElementById("lista-talleres-firebase"); 
+    divLista.innerHTML = "<p style='text-align:center; font-size:12px; margin-top:20px;'>Buscando talleres...</p>";
+
+    try {
+        const resSnap = await db.collection("resultadosTalleres").where("documentoEstudiante", "==", estActualDoc).get();
+        const talleresCompletados = [];
+        resSnap.forEach(doc => talleresCompletados.push(doc.data().idTaller));
+
+        const snap = await db.collection("talleresLectura")
+            .where("gradoDestino", "array-contains-any", [gradoEstudianteActual, "Todos"])
+            .where("activo", "==", true)
+            .get();
+
+        divLista.innerHTML = "";
+        let actividadesDisponibles = 0;
         
-        const divs = document.querySelectorAll('[id^="pregunta-"]');
-        let resps = [];
-        divs.forEach(div => {
-            const t = div.dataset.tipo; const qId = div.id.split('-')[1]; const pText = div.querySelector('.q-text').value;
-            if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
-            else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
-            else resps.push({tipo:t, pregunta:pText});
+        snap.forEach(doc => {
+            const t = doc.data();
+            
+            // FILTRO DE PRIVACIDAD: Si el profe asignó un estudiante específico y no es el actual, se oculta.
+            if (t.targetStudentDoc && t.targetStudentDoc !== estActualDoc) return;
+            
+            // FILTRO DE PRIVACIDAD: Si el estudiante actual está en la lista de excluidos, se oculta.
+            if (t.estudiantesExcluidos && t.estudiantesExcluidos.includes(estActualDoc)) return;
+
+            actividadesDisponibles++;
+            const id = doc.id;
+            const yaRespondio = talleresCompletados.includes(id);
+            const ahora = new Date();
+            const vencimiento = t.fechaVencimiento ? new Date(t.fechaVencimiento) : null;
+            const estaVencido = vencimiento && ahora > vencimiento;
+            let fVencStr = vencimiento ? vencimiento.toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short'}) : '';
+
+            if (yaRespondio) {
+                divLista.innerHTML += `
+                  <div class="card-btn" style="flex-direction:row; justify-content:space-between; padding:15px 20px; width:100%; margin-bottom:12px; background:#e8f5e9; border: 1.5px solid #a5d6a7; cursor:not-allowed;" onclick="alert('Ya enviaste tus respuestas para esta actividad. ¡Buen trabajo!')">
+                    <div style="text-align:left;">
+                      <div style="font-size:10px; font-weight:900; color:#2e7d32;">✅ COMPLETADO</div>
+                      <div style="font-weight:800; color:#1b5e20;">${t.titulo}</div>
+                    </div>
+                    <div style="font-size:20px; color:#a5d6a7;">🔒</div>
+                  </div>
+                `;
+            } else if (estaVencido) {
+                divLista.innerHTML += `
+                  <div class="card-btn" style="flex-direction:row; justify-content:space-between; padding:15px 20px; width:100%; margin-bottom:12px; background:#ffebee; border: 1.5px solid #ffcdd2; cursor:not-allowed;" onclick="alert('El plazo para esta actividad ha finalizado.')">
+                    <div style="text-align:left;">
+                      <div style="font-size:10px; font-weight:900; color:#c62828;">⏳ CERRADO</div>
+                      <div style="font-weight:800; color:#b71c1c;">${t.titulo}</div>
+                      <div style="font-size:9px; font-weight:bold; color:#c62828; margin-top:3px;">Cerró el: ${fVencStr}</div>
+                    </div>
+                    <div style="font-size:20px; color:#ef5350;">🔒</div>
+                  </div>
+                `;
+            } else {
+                divLista.innerHTML += `
+                  <div class="card-btn" style="flex-direction:row; justify-content:space-between; padding:15px 20px; width:100%; margin-bottom:12px;" onclick='cargarTaller(${JSON.stringify({id: id, ...t}).replace(/'/g, "&apos;")})'>
+                    <div style="text-align:left;">
+                      <div style="font-size:10px; font-weight:900; color:#1b5e20; text-transform:uppercase;">📖 ${t.areaConocimiento || 'COMPRENSIÓN'}</div>
+                      <div style="font-weight:800; color:#333;">${t.titulo}</div>
+                      ${fVencStr ? `<div style="font-size:9px; font-weight:bold; color:#d32f2f; margin-top:3px;">⏳ Cierra: ${fVencStr}</div>` : ''}
+                    </div>
+                    <div style="font-size:20px; color:#1b5e20;">➔</div>
+                  </div>
+                `;
+            }
         });
 
-        if(!grados.length || !titulo || !texto || !tipo || !area || !fechaVencimiento) return alert("Completa todos los campos principales (incluyendo Fecha de Cierre).");
-
-        document.getElementById('btnPublicar').disabled = true; document.getElementById('btnBorrador').disabled = true;
-
-        const tallerData = { 
-            titulo, contenido: texto, gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaVencimiento, targetStudentDoc,
-            preguntas: resps, status: status, activo: status === 'published', archived: false, 
-            timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) 
-        };
-
-        let generarAviso = false;
-        if(status === 'published') {
-            if(!tallerEditandoId) { generarAviso = true; } 
-            else { const tPrevio = cacheTalleresLocal.find(x => x.id === tallerEditandoId); if(tPrevio && tPrevio.status === 'draft') generarAviso = true; }
+        if (actividadesDisponibles === 0) {
+            divLista.innerHTML = "<p style='text-align:center; font-size:12px; opacity:0.6; margin-top:20px;'>No hay talleres asignados por el docente para ti.</p>";
         }
 
-        if(tallerEditandoId) { await db.collection("talleresLectura").doc(tallerEditandoId).update(tallerData); } 
-        else { await db.collection("talleresLectura").add(tallerData); }
-
-        if(generarAviso) {
-            const fVencObj = new Date(fechaVencimiento);
-            const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
-            await db.collection("tableroAvisos").add({
-                mensaje: `🎮 NUEVA ACTIVIDAD\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}`,
-                color: 'purple', scope: targetStudentDoc ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
-                targetGrades: grados, targetStudentDoc: targetStudentDoc,
-                timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
-            });
-        }
-        location.reload();
+    } catch(e) {
+        divLista.innerHTML = "<p style='text-align:center; font-size:12px; color:red;'>Error de conexión con el servidor.</p>";
     }
+  }
 
-    let filtroLista = 'publicados'; let cacheTalleresLocal = [];
-    function setFiltroLista(filtro) {
-        filtroLista = filtro;
-        document.getElementById('filtro-publicados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${filtro==='publicados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        document.getElementById('filtro-borradores').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${filtro==='borradores'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        document.getElementById('filtro-archivados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${filtro==='archivados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        renderizarTalleres();
-    }
-    function cargarTalleres() { db.collection("talleresLectura").orderBy("timestamp", "desc").onSnapshot(snap => { cacheTalleresLocal = []; snap.forEach(doc => cacheTalleresLocal.push({id: doc.id, ...doc.data()})); renderizarTalleres(); }); }
-    function renderizarTalleres() {
-        const lista = document.getElementById('listaTalleres'); lista.innerHTML = "";
-        let filtrados = cacheTalleresLocal.filter(t => { if (filtroLista === 'archivados') return t.archived === true; if (filtroLista === 'borradores') return t.status === 'draft' && !t.archived; return t.status === 'published' && !t.archived; });
-        if(filtrados.length === 0) { lista.innerHTML = `<p class="col-span-2 text-center text-xs text-stone-400 font-black uppercase py-6">No hay registros.</p>`; return; }
-        filtrados.forEach(t => {
-            let indBadge = t.targetStudentDoc ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[8px] font-black ml-1">👤 INDIVIDUAL</span>` : '';
-            let btnArchivar = t.archived ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>` : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
-            let btnEditar = !t.archived ? `<button onclick="editarTaller('${t.id}')" class="text-blue-700 text-[10px] font-black uppercase bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200">Editar</button>` : '';
-
-            lista.innerHTML += `<div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}"><div class="flex justify-between items-start mb-4"><div class="flex-1 pr-2"><span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.join(', ')}</span>${indBadge}<h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3><p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p></div></div><div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">${btnEditar}${btnArchivar}<button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button></div></div>`;
-        });
-    }
-
-    async function editarTaller(id) {
-        const t = cacheTalleresLocal.find(x => x.id === id); if(!t) return; tallerEditandoId = id;
-        document.getElementById('form-title').innerText = "Editando: " + t.titulo;
-        document.getElementById('tituloTaller').value = t.titulo; document.getElementById('fechaVencimiento').value = t.fechaVencimiento || ''; document.getElementById('textoLectura').value = t.contenido; document.getElementById('tipoActividad').value = t.tipoActividad; document.getElementById('areaConocimiento').value = t.areaConocimiento; document.getElementById('targetStudentDoc').value = t.targetStudentDoc || '';
-        document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
-        document.getElementById('contenedorPreguntas').innerHTML = ""; t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
-        document.getElementById('form-title').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    async function toggleArchivar(id, isArchiving, statusActual) { await db.collection("talleresLectura").doc(id).update({ archived: isArchiving, activo: isArchiving ? false : (statusActual === 'published') }); }
-    async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar?', text:'No se puede deshacer.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
-
-    /* --- PESTAÑA RESULTADOS --- */
-    let cacheResultadosLocal = []; let estadoResultados = 'activos';
+  function cargarTaller(data) {
+    tallerEnCurso = data; 
+    navegarA('taller-activo');
+    document.getElementById("taller-titulo").innerText = data.titulo;
     
-    function setFiltroResEstado(estado) {
-        estadoResultados = estado;
-        document.getElementById('filtro-res-activos').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${estado==='activos'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        document.getElementById('filtro-res-archivados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${estado==='archivados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        renderizarResultados();
+    // Renderizado dinámico de texto, imagen y video
+    let contenidoHtml = "";
+    if(data.videoUrl) {
+        const vidId = getYouTubeId(data.videoUrl);
+        if(vidId) contenidoHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${vidId}" allowfullscreen></iframe></div>`;
     }
-
-    function cargarResultados() {
-        db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
-            cacheResultadosLocal = [];
-            snap.forEach(doc => cacheResultadosLocal.push({id: doc.id, ...doc.data()}));
-            renderizarResultados();
-        });
+    if(data.imageUrl) {
+        contenidoHtml += `<img src="${data.imageUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`;
     }
-
-    function renderizarResultados() {
-        const div = document.getElementById("listaResultados"); div.innerHTML = "";
-        const fNombre = document.getElementById("buscarEstudiante").value.toLowerCase();
-        const fGrado = document.getElementById("buscarGrado").value;
-
-        let filtrados = cacheResultadosLocal.filter(r => {
-            if(estadoResultados === 'archivados' && !r.archived) return false;
-            if(estadoResultados === 'activos' && r.archived) return false;
-            if(fNombre && !r.nombreEstudiante.toLowerCase().includes(fNombre)) return false;
-            if(fGrado && r.grado !== fGrado) return false;
-            return true;
-        });
-
-        if(filtrados.length === 0) { div.innerHTML = '<p class="text-center py-10 text-stone-400 text-xs font-black uppercase">No hay resultados que coincidan.</p>'; return; }
-
-        filtrados.forEach(res => {
-            let respuestasHtml = res.respuestas.map((r, i) => {
-                let icono = r.esCorrecta ? '✅' : '❌'; if (r.tipo === 'abierta') icono = '📝';
-                return `<div class="p-3 bg-white rounded-xl mb-2 border border-stone-200"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700 mt-1">${icono} Resp: ${r.respuestaDada}</p></div>`;
-            }).join("");
-
-            let btnArchivar = res.archived 
-                ? `<button onclick="toggleArchivarRes('${res.id}', false)" class="text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Desarchivar</button>`
-                : `<button onclick="toggleArchivarRes('${res.id}', true)" class="text-stone-500 bg-stone-200 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Archivar Nota</button>`;
-
-            let bloqueNotaHtml = res.requiereRevision ? `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR TEXTO</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>` : `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
-
-            div.innerHTML += `
-                <div class="card p-5 border ${res.requiereRevision ? 'border-orange-300 bg-orange-50/20' : 'border-stone-200'}">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p>
-                            <h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3>
-                            <p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p>
-                        </div>
-                        ${bloqueNotaHtml}
-                    </div>
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <button onclick="document.getElementById('acc-${res.id}').classList.toggle('hidden')" class="bg-blue-50 text-blue-700 text-[10px] font-black px-3 py-2 rounded-lg uppercase flex items-center gap-1">👁️ Visualizar</button>
-                        <button onclick="descargarPDFIndividual('${res.id}')" class="bg-red-50 text-red-700 text-[10px] font-black px-3 py-2 rounded-lg uppercase">📄 PDF</button>
-                        ${btnArchivar}
-                        <button onclick="habilitarReintento('${res.id}')" class="text-red-600 text-[10px] font-black uppercase px-3 py-2 rounded-lg ml-auto border border-red-200">Borrar Intento</button>
-                    </div>
-                    <div id="acc-${res.id}" class="hidden bg-stone-50 p-3 rounded-xl border border-stone-200">${respuestasHtml}</div>
-                </div>`;
-        });
+    if(data.contenido) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerText = data.contenido;
+        contenidoHtml += `<div style="white-space: pre-line;">${tempDiv.innerHTML}</div>`;
     }
+    document.getElementById("taller-contenido").innerHTML = contenidoHtml;
+    
+    // Renderizado de preguntas
+    const divP = document.getElementById("taller-preguntas"); 
+    divP.innerHTML = "";
+    data.preguntas.forEach((p, index) => {
+      let html = `<div class="pregunta-card"><div style="font-weight:800; font-size:14px; margin-bottom:10px; color:#1e293b;">${index+1}. ${p.pregunta}</div>`;
+      if(p.tipo === 'multiple') {
+        html += `<label class="opcion-label"><input type="radio" name="p${index}" value="a" style="margin-right:8px; accent-color:#1b5e20;"> A) ${p.opciones.a}</label>`;
+        html += `<label class="opcion-label"><input type="radio" name="p${index}" value="b" style="margin-right:8px; accent-color:#1b5e20;"> B) ${p.opciones.b}</label>`;
+        html += `<label class="opcion-label"><input type="radio" name="p${index}" value="c" style="margin-right:8px; accent-color:#1b5e20;"> C) ${p.opciones.c}</label>`;
+      } else if(p.tipo === 'verdadero_falso') {
+        html += `<label class="opcion-label"><input type="radio" name="p${index}" value="verdadero" style="margin-right:8px; accent-color:#1b5e20;"> Verdadero</label>`;
+        html += `<label class="opcion-label"><input type="radio" name="p${index}" value="falso" style="margin-right:8px; accent-color:#1b5e20;"> Falso</label>`;
+      } else {
+        html += `<textarea id="resp-abierta-${index}" placeholder="Escribe aquí tu respuesta de forma clara y con buena ortografía..." rows="4"></textarea>`;
+      }
+      divP.innerHTML += html + `</div>`;
+    });
+  }
 
-    async function toggleArchivarRes(id, state) { await db.collection("resultadosTalleres").doc(id).update({ archived: state }); }
-    async function calificarManual(docId) { const inputVal = document.getElementById(`nota-${docId}`).value; const notaDefinitiva = parseFloat(inputVal.replace(',', '.')); if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa nota válida."); } await db.collection("resultadosTalleres").doc(docId).update({ nota: notaDefinitiva, requiereRevision: false }); }
-    async function habilitarReintento(docId) { if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota actual.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("resultadosTalleres").doc(docId).delete(); Swal.fire('Habilitado', 'El estudiante puede volver a entrar.', 'success'); } }
+  async function evaluarTallerLectura() {
+    const btn = document.getElementById("btnFinalizarTaller");
+    let aciertos = 0, totalC = 0, totalAbiertas = 0, respondidas = true, resps = [];
+    
+    tallerEnCurso.preguntas.forEach((p, i) => {
+      let r = "", ok = false;
+      if(p.tipo === 'multiple' || p.tipo === 'verdadero_falso') {
+        totalC++; 
+        const sel = document.querySelector(`input[name="p${i}"]:checked`);
+        if(!sel) respondidas = false; else { r = sel.value; ok = (r === p.correcta); if(ok) aciertos++; }
+      } else {
+        totalAbiertas++;
+        r = document.getElementById(`resp-abierta-${i}`).value.trim(); if(!r) respondidas = false;
+      }
+      resps.push({ pregunta: p.pregunta, tipo: p.tipo, respuestaDada: r, esCorrecta: ok });
+    });
 
-    function descargarReporteGeneralPDF() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
-        const filtrados = cacheResultadosLocal.filter(r => {
-            const fNombre = document.getElementById("buscarEstudiante").value.toLowerCase();
-            const fGrado = document.getElementById("buscarGrado").value;
-            if(estadoResultados === 'archivados' && !r.archived) return false;
-            if(estadoResultados === 'activos' && r.archived) return false;
-            if(fNombre && !r.nombreEstudiante.toLowerCase().includes(fNombre)) return false;
-            if(fGrado && r.grado !== fGrado) return false;
-            return true;
-        });
-        if(filtrados.length === 0) return alert("No hay datos en el filtro actual.");
-        const body = filtrados.map(r => [r.grado, r.nombreEstudiante, r.tituloTaller, r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1), r.fecha]);
-        doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
-        doc.save("Reporte_Lectura_General.pdf");
+    if(!respondidas) return alert("Por favor, responde todas las preguntas antes de enviar.");
+    
+    btn.disabled = true; btn.innerText = "ENVIANDO...";
+    let requiereRevision = totalAbiertas > 0;
+    let notaCalculada = totalC > 0 ? (aciertos/totalC)*5 : 0; 
+
+    try {
+      await db.collection("resultadosTalleres").add({ 
+          idTaller: tallerEnCurso.id, 
+          tituloTaller: tallerEnCurso.titulo, 
+          nombreEstudiante: estSop.nombre, 
+          documentoEstudiante: estActualDoc, 
+          grado: gradoEstudianteActual, 
+          nota: requiereRevision ? 0 : notaCalculada,
+          aciertosCerrados: aciertos,
+          totalCerradas: totalC,
+          requiereRevision: requiereRevision,
+          respuestas: resps, 
+          fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), 
+          timestamp: Date.now() 
+      });
+      
+      // MOSTRAR OVERLAY INFANTIL EN LUGAR DE ALERT
+      let msg = "";
+      if(requiereRevision) {
+          msg = `Obtuviste ${aciertos} de ${totalC} correctas en las preguntas automáticas.\n\n⏳ Tu nota final está pendiente de que el profe Oscar califique tu respuesta escrita.`;
+      } else {
+          msg = `¡Completaste la actividad!\nTu calificación final es: ${notaCalculada.toFixed(1)}`;
+      }
+      document.getElementById('successTallerText').innerText = msg;
+      document.getElementById('successTaller').style.display = 'flex';
+      
+      btn.disabled = false; btn.innerText = "ENVIAR RESPUESTAS";
+    } catch(e) { 
+        alert("Error de conexión. Intenta de nuevo."); 
+        btn.disabled = false; btn.innerText = "ENVIAR RESPUESTAS"; 
     }
+  }
 
-    function descargarPDFIndividual(id) {
-        const res = cacheResultadosLocal.find(r => r.id === id); if(!res) return;
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(14); doc.text("REPORTE INDIVIDUAL DE ACTIVIDAD", 10, 15);
-        doc.setFontSize(10); doc.text(`Estudiante: ${res.nombreEstudiante}`, 10, 25); doc.text(`Grado: ${res.grado}`, 10, 30); doc.text(`Actividad: ${res.tituloTaller}`, 10, 35); doc.text(`Nota Final: ${res.requiereRevision ? 'Pendiente de revisión' : res.nota.toFixed(1)}`, 10, 40); doc.text(`Fecha: ${res.fecha}`, 10, 45);
-        const body = res.respuestas.map((r, i) => [`P${i+1}: ${r.pregunta}`, r.respuestaDada, r.esCorrecta ? 'Correcta' : (r.tipo==='abierta'?'Abierta':'Incorrecta')]);
-        doc.autoTable({ startY: 55, head: [['PREGUNTA', 'RESPUESTA DEL ESTUDIANTE', 'ESTADO']], body: body, headStyles: { fillColor: [107, 33, 168] }, columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 80 } } });
-        doc.save(`Prueba_${res.nombreEstudiante.replace(/ /g, '_')}.pdf`);
-    }
+  function cerrarSuccessTaller() {
+      document.getElementById('successTaller').style.display = 'none';
+      volverAlMenu();
+  }
 
-    window.onload = function() {
-        const selectDoc = document.getElementById("targetStudentDoc");
-        estudiantesValidos.forEach(e => { selectDoc.innerHTML += `<option value="${e.doc}">${e.nombre} (${e.grado})</option>`; });
-        cargarTalleres();
-    };
-  </script>
+</script>
 </body>
 </html>
