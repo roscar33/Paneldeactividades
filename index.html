@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Lectura Pro v5.0</title>
+  <title>Gestor de Lectura Pro v4.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -28,7 +28,7 @@
 <body class="p-4 pb-20">
 
   <header class="max-w-4xl mx-auto mb-6 text-center">
-    <h1 class="text-2xl font-black uppercase text-purple-900 tracking-tighter">Panel de Lectura Pro <span class="text-purple-500">v5.0</span></h1>
+    <h1 class="text-2xl font-black uppercase text-purple-900 tracking-tighter">Panel de Lectura Pro <span class="text-purple-500">v4.2</span></h1>
     <div class="flex gap-2 bg-stone-200 p-1.5 rounded-2xl mt-4 max-w-sm mx-auto">
         <button onclick="switchTab('editor')" id="tab-editor" class="flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm transition-all">Editor</button>
         <button onclick="switchTab('resultados')" id="tab-resultados" class="flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive transition-all">Resultados</button>
@@ -42,7 +42,7 @@
             <h2 id="form-title" class="text-[11px] font-black uppercase text-stone-400 mb-2">Crear / Editar Actividad</h2>
             
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-stone-500 uppercase px-1">1. Seleccionar Grados:</label>
+                <label class="text-[10px] font-black text-stone-500 uppercase px-1">Seleccionar Grados:</label>
                 <div id="selector-grados" class="flex flex-wrap gap-2">
                     <button onclick="toggleGradoSel(this)" value="Primero" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Primero</button>
                     <button onclick="toggleGradoSel(this)" value="Segundo" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Segundo</button>
@@ -51,14 +51,6 @@
                     <button onclick="toggleGradoSel(this)" value="Quinto" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Quinto</button>
                     <button onclick="toggleGradoSel(this, true)" value="Todos" class="badge-grado border-2 border-stone-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-stone-400 hover:border-purple-300">Todos</button>
                 </div>
-            </div>
-
-            <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                <label class="text-[10px] font-black text-purple-700 uppercase px-1 mb-1 block">Opcional: Asignar a un SOLO estudiante (Individual)</label>
-                <select id="targetStudentDoc" class="w-full text-xs font-bold bg-white text-purple-900 border-purple-200">
-                    <option value="">-- Dejar en blanco para aplicar a todo el grupo --</option>
-                    </select>
-                <p class="text-[9px] text-purple-600 mt-1 font-bold">Si seleccionas un niño, los demás no verán esta actividad.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
@@ -74,7 +66,13 @@
                 <select id="areaConocimiento" class="w-full text-xs font-bold bg-stone-50"><option value="">Área...</option><option>ESPAÑOL (LENGUAJE)</option><option>MATEMATICAS</option><option>CIENCIAS NATURALES</option><option>CIENCIAS SOCIALES</option><option>INGLES</option><option>ARTISTICA</option><option>EDUCACION FISICA</option><option>ETICA Y VALORES</option><option>RELIGION</option><option>TECNOLOGIA E INFORMATICA</option></select>
             </div>
 
-            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí..." class="w-full text-sm font-medium mt-2"></textarea>
+            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí (Opcional si usas imagen/video)..." class="w-full text-sm font-medium mt-2"></textarea>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                <input type="url" id="imagenTaller" placeholder="URL de Imagen (Opcional)" class="w-full text-xs font-bold">
+                <input type="url" id="videoTaller" placeholder="URL de Video YouTube (Opcional)" class="w-full text-xs font-bold">
+            </div>
+
             <div id="contenedorPreguntas" class="space-y-6 border-t pt-4"></div>
 
             <div class="grid grid-cols-3 gap-2">
@@ -99,25 +97,11 @@
         </section>
     </div>
 
-    <div id="view-resultados" class="hidden space-y-4">
-        
-        <div class="card p-4 space-y-3">
-            <h2 class="text-[11px] font-black uppercase text-stone-400">Filtros de Resultados</h2>
-            <div class="flex gap-2 bg-stone-100 p-1.5 rounded-xl mb-2">
-                <button onclick="setFiltroResEstado('activos')" id="filtro-res-activos" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg bg-white shadow-sm text-purple-900 transition-all">Notas Activas</button>
-                <button onclick="setFiltroResEstado('archivados')" id="filtro-res-archivados" class="flex-1 py-2 text-[10px] font-black uppercase rounded-lg text-stone-500 hover:bg-white transition-all">Notas Archivadas</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input type="text" id="buscarEstudiante" placeholder="Buscar por nombre..." class="w-full text-xs font-bold p-3" onkeyup="renderizarResultados()">
-                <select id="buscarGrado" class="w-full text-xs font-bold p-3" onchange="renderizarResultados()">
-                    <option value="">Todos los Grados</option>
-                    <option value="Primero">Primero</option><option value="Segundo">Segundo</option>
-                    <option value="Tercero">Tercero</option><option value="Cuarto">Cuarto</option><option value="Quinto">Quinto</option>
-                </select>
-            </div>
-            <button onclick="descargarReporteGeneralPDF()" class="w-full bg-[#1b5e20] text-white text-[10px] font-black px-4 py-3 rounded-xl uppercase shadow-lg flex items-center justify-center gap-2 active:scale-95 mt-2">📄 Descargar Planilla Filtrada (PDF)</button>
+    <div id="view-resultados" class="hidden space-y-6">
+        <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+            <h2 class="text-xs font-black uppercase text-stone-500">Historial de Respuestas</h2>
+            <button onclick="descargarReportePDF()" class="bg-red-600 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase shadow-lg flex items-center gap-2 active:scale-95">📄 Exportar PDF</button>
         </div>
-
         <div id="listaResultados" class="space-y-4"></div>
     </div>
   </main>
@@ -127,26 +111,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let tallerEditandoId = null;
-
-    // BASE DE DATOS LOCAL PARA INDIVIDUALIZAR
-    const estudiantesValidos = [
-        { doc: "1042155626", nombre: "MARTINEZ ARANGO AYLYN", grado: "Primero" }, { doc: "1041636979", nombre: "OSORIO MUÑOZ JERONIMO", grado: "Primero" },
-        { doc: "1041636870", nombre: "GONZALEZ BETANCUR MARIA JOSE", grado: "Segundo" }, { doc: "1042155380", nombre: "GUTIERREZ CHAVARRIA JOSE LEANDRO", grado: "Segundo" },
-        { doc: "1041636841", nombre: "VARELAS BARRIENTOS LUCIANA", grado: "Segundo" }, { doc: "1041636641", nombre: "MARTINEZ MARTINEZ SEBASTIAN", grado: "Segundo" },
-        { doc: "1035922719", nombre: "MOLINA OCHOA BELEN", grado: "Tercero" }, { doc: "1067959648", nombre: "PACHECO BARRERA JOSE DANIEL", grado: "Tercero" },
-        { doc: "1032328826", nombre: "LOPERA CADAVID LUCIANA", grado: "Segundo" }, { doc: "1042155250", nombre: "CASAS FERNANDEZ ANTONELLA", grado: "Cuarto" },
-        { doc: "1035801483", nombre: "RESTREPO VILLA DILMER FELIPE", grado: "Cuarto" }, { doc: "1157463842", nombre: "BERRIO CORREA VALENTINA", grado: "Quinto" },
-        { doc: "1038213324", nombre: "GUZMAN CORREA DYLAN", grado: "Quinto" }, { doc: "1041636021", nombre: "VARELAS BARRIENTOS MAXIMILIANO", grado: "Quinto" },
-        { doc: "12345678", nombre: "PEDRO PEREZ", grado: "Quinto" }
-    ];
-
-    window.onload = function() {
-        const selectDoc = document.getElementById("targetStudentDoc");
-        estudiantesValidos.forEach(e => {
-            selectDoc.innerHTML += `<option value="${e.doc}">${e.nombre} (${e.grado})</option>`;
-        });
-        cargarTalleres();
-    };
 
     function switchTab(tab) {
         document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
@@ -173,13 +137,19 @@
       div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${tipo === 'multiple' ? 'border-purple-100 bg-white' : (tipo === 'abierta' ? 'border-blue-100 bg-blue-50/30' : 'border-green-100 bg-green-50/30')}`;
       div.id = `pregunta-${id}`;
       div.dataset.tipo = tipo;
+      
       let html = `<button onclick="this.parentElement.remove()" class="absolute top-3 right-3 text-stone-300 hover:text-red-500">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="Enunciado de la pregunta..." class="w-full mb-4 text-xs font-bold q-text">`;
       if (tipo === 'multiple') {
-        html += `<div class="space-y-2"><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones.a:''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones.b:''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones.c:''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div></div>`;
+        html += `<div class="space-y-2">
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones.a:''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones.b:''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones.c:''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div>
+        </div>`;
       } else if (tipo === 'verdadero_falso') {
         html += `<div class="flex gap-4"><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="verdadero" ${data?.correcta==='verdadero'?'checked':(!data?'checked':'')}> Verdadero</label><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="falso" ${data?.correcta==='falso'?'checked':''}> Falso</label></div>`;
       }
-      div.innerHTML = html; document.getElementById('contenedorPreguntas').appendChild(div);
+      div.innerHTML = html;
+      document.getElementById('contenedorPreguntas').appendChild(div);
     }
 
     async function guardarTaller(status) {
@@ -189,23 +159,29 @@
         const texto = document.getElementById('textoLectura').value;
         const tipo = document.getElementById('tipoActividad').value;
         const area = document.getElementById('areaConocimiento').value;
-        const targetStudentDoc = document.getElementById('targetStudentDoc').value;
+        const imgUrl = document.getElementById('imagenTaller').value.trim();
+        const vidUrl = document.getElementById('videoTaller').value.trim();
         
         const divs = document.querySelectorAll('[id^="pregunta-"]');
         let resps = [];
         divs.forEach(div => {
-            const t = div.dataset.tipo; const qId = div.id.split('-')[1]; const pText = div.querySelector('.q-text').value;
+            const t = div.dataset.tipo;
+            const qId = div.id.split('-')[1];
+            const pText = div.querySelector('.q-text').value;
             if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else resps.push({tipo:t, pregunta:pText});
         });
 
-        if(!grados.length || !titulo || !texto || !tipo || !area || !fechaVencimiento) return alert("Completa todos los campos principales (incluyendo Fecha de Cierre).");
+        if(!grados.length || !titulo || !tipo || !area || !fechaVencimiento) return alert("Completa todos los campos principales (incluyendo Fecha de Cierre).");
+        if(!texto && !imgUrl && !vidUrl) return alert("Debes incluir un texto, una imagen o un video.");
 
-        document.getElementById('btnPublicar').disabled = true; document.getElementById('btnBorrador').disabled = true;
+        document.getElementById('btnPublicar').disabled = true;
+        document.getElementById('btnBorrador').disabled = true;
 
         const tallerData = { 
-            titulo, contenido: texto, gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaVencimiento, targetStudentDoc,
+            titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, 
+            gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaVencimiento: fechaVencimiento,
             preguntas: resps, status: status, activo: status === 'published', archived: false, 
             timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) 
         };
@@ -213,7 +189,10 @@
         let generarAviso = false;
         if(status === 'published') {
             if(!tallerEditandoId) { generarAviso = true; } 
-            else { const tPrevio = cacheTalleresLocal.find(x => x.id === tallerEditandoId); if(tPrevio && tPrevio.status === 'draft') generarAviso = true; }
+            else {
+                const tPrevio = cacheTalleresLocal.find(x => x.id === tallerEditandoId);
+                if(tPrevio && tPrevio.status === 'draft') generarAviso = true; 
+            }
         }
 
         if(tallerEditandoId) { await db.collection("talleresLectura").doc(tallerEditandoId).update(tallerData); } 
@@ -223,16 +202,17 @@
             const fVencObj = new Date(fechaVencimiento);
             const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
             await db.collection("tableroAvisos").add({
-                mensaje: `🎮 NUEVA ACTIVIDAD\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}`,
-                color: 'purple', scope: targetStudentDoc ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
-                targetGrades: grados, targetStudentDoc: targetStudentDoc,
+                mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}`,
+                color: 'purple', scope: grados.includes('Todos') ? 'General' : 'Grado', targetGrades: grados,
                 timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
             });
         }
         location.reload();
     }
 
-    let filtroLista = 'publicados'; let cacheTalleresLocal = [];
+    let filtroLista = 'publicados';
+    let cacheTalleresLocal = [];
+
     function setFiltroLista(filtro) {
         filtroLista = filtro;
         document.getElementById('filtro-publicados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${filtro==='publicados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
@@ -240,135 +220,118 @@
         document.getElementById('filtro-archivados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${filtro==='archivados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
         renderizarTalleres();
     }
-    function cargarTalleres() { db.collection("talleresLectura").orderBy("timestamp", "desc").onSnapshot(snap => { cacheTalleresLocal = []; snap.forEach(doc => cacheTalleresLocal.push({id: doc.id, ...doc.data()})); renderizarTalleres(); }); }
+
+    function cargarTalleres() {
+      db.collection("talleresLectura").orderBy("timestamp", "desc").onSnapshot(snap => {
+        cacheTalleresLocal = [];
+        snap.forEach(doc => cacheTalleresLocal.push({id: doc.id, ...doc.data()}));
+        renderizarTalleres();
+      });
+    }
+
     function renderizarTalleres() {
-        const lista = document.getElementById('listaTalleres'); lista.innerHTML = "";
-        let filtrados = cacheTalleresLocal.filter(t => { if (filtroLista === 'archivados') return t.archived === true; if (filtroLista === 'borradores') return t.status === 'draft' && !t.archived; return t.status === 'published' && !t.archived; });
-        if(filtrados.length === 0) { lista.innerHTML = `<p class="col-span-2 text-center text-xs text-stone-400 font-black uppercase py-6">No hay registros.</p>`; return; }
+        const lista = document.getElementById('listaTalleres');
+        lista.innerHTML = "";
+        
+        let filtrados = cacheTalleresLocal.filter(t => {
+            if (filtroLista === 'archivados') return t.archived === true;
+            if (filtroLista === 'borradores') return t.status === 'draft' && !t.archived;
+            return t.status === 'published' && !t.archived;
+        });
+
+        if(filtrados.length === 0) { lista.innerHTML = `<p class="col-span-2 text-center text-xs text-stone-400 font-black uppercase py-6">No hay registros en esta categoría.</p>`; return; }
+
         filtrados.forEach(t => {
-            let indBadge = t.targetStudentDoc ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[8px] font-black ml-1">👤 INDIVIDUAL</span>` : '';
-            let btnArchivar = t.archived ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>` : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
+            let btnArchivar = t.archived 
+                ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
+                : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
             let btnEditar = !t.archived ? `<button onclick="editarTaller('${t.id}')" class="text-blue-700 text-[10px] font-black uppercase bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200">Editar</button>` : '';
 
-            lista.innerHTML += `<div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}"><div class="flex justify-between items-start mb-4"><div class="flex-1 pr-2"><span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.join(', ')}</span>${indBadge}<h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3><p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p></div></div><div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">${btnEditar}${btnArchivar}<button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button></div></div>`;
+            lista.innerHTML += `
+              <div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}">
+                <div class="flex justify-between items-start mb-4">
+                  <div class="flex-1 pr-2">
+                      <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.join(', ')}</span>
+                      <h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3>
+                      <p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">
+                    ${btnEditar}
+                    ${btnArchivar}
+                    <button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button>
+                </div>
+              </div>`;
         });
     }
 
     async function editarTaller(id) {
-        const t = cacheTalleresLocal.find(x => x.id === id); if(!t) return; tallerEditandoId = id;
+        const t = cacheTalleresLocal.find(x => x.id === id);
+        if(!t) return;
+        tallerEditandoId = id;
         document.getElementById('form-title').innerText = "Editando: " + t.titulo;
-        document.getElementById('tituloTaller').value = t.titulo; document.getElementById('fechaVencimiento').value = t.fechaVencimiento || ''; document.getElementById('textoLectura').value = t.contenido; document.getElementById('tipoActividad').value = t.tipoActividad; document.getElementById('areaConocimiento').value = t.areaConocimiento; document.getElementById('targetStudentDoc').value = t.targetStudentDoc || '';
+        document.getElementById('tituloTaller').value = t.titulo;
+        document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
+        document.getElementById('textoLectura').value = t.contenido;
+        document.getElementById('imagenTaller').value = t.imageUrl || '';
+        document.getElementById('videoTaller').value = t.videoUrl || '';
+        document.getElementById('tipoActividad').value = t.tipoActividad;
+        document.getElementById('areaConocimiento').value = t.areaConocimiento;
         document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
-        document.getElementById('contenedorPreguntas').innerHTML = ""; t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
+        document.getElementById('contenedorPreguntas').innerHTML = "";
+        t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
         document.getElementById('form-title').scrollIntoView({ behavior: 'smooth' });
     }
 
     async function toggleArchivar(id, isArchiving, statusActual) { await db.collection("talleresLectura").doc(id).update({ archived: isArchiving, activo: isArchiving ? false : (statusActual === 'published') }); }
-    async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar?', text:'No se puede deshacer.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
+    async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar Definitivamente?', text:'Esta acción no se puede deshacer.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
 
-    /* --- PESTAÑA RESULTADOS --- */
-    let cacheResultadosLocal = []; let estadoResultados = 'activos';
-    
-    function setFiltroResEstado(estado) {
-        estadoResultados = estado;
-        document.getElementById('filtro-res-activos').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${estado==='activos'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        document.getElementById('filtro-res-archivados').className = `flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${estado==='archivados'?'bg-white shadow-sm text-purple-900':'text-stone-500 hover:bg-white'}`;
-        renderizarResultados();
-    }
-
+    let cacheResultados = [];
     function cargarResultados() {
         db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
-            cacheResultadosLocal = [];
-            snap.forEach(doc => cacheResultadosLocal.push({id: doc.id, ...doc.data()}));
-            renderizarResultados();
+            cacheResultados = [];
+            const div = document.getElementById("listaResultados");
+            div.innerHTML = snap.empty ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas aún</p>' : "";
+            snap.forEach(doc => {
+                const res = doc.data();
+                cacheResultados.push(res);
+                let respuestasHtml = res.respuestas.map((r, i) => {
+                    let icono = r.esCorrecta ? '✅' : '❌';
+                    if (r.tipo === 'abierta') icono = '📝';
+                    return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`;
+                }).join("");
+                let bloqueNotaHtml = "";
+                if (res.requiereRevision) {
+                    bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${doc.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${doc.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`;
+                } else {
+                    bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
+                }
+                div.innerHTML += `<div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}"><div class="flex justify-between items-start mb-4"><div><p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p><h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3><p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p></div>${bloqueNotaHtml}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">${respuestasHtml}</div><div class="border-t border-stone-200 pt-3 text-right"><button onclick="habilitarReintento('${doc.id}')" class="text-red-600 text-[10px] font-black uppercase bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">Borrar y habilitar reintento</button></div></div>`;
+            });
         });
     }
 
-    function renderizarResultados() {
-        const div = document.getElementById("listaResultados"); div.innerHTML = "";
-        const fNombre = document.getElementById("buscarEstudiante").value.toLowerCase();
-        const fGrado = document.getElementById("buscarGrado").value;
-
-        let filtrados = cacheResultadosLocal.filter(r => {
-            if(estadoResultados === 'archivados' && !r.archived) return false;
-            if(estadoResultados === 'activos' && r.archived) return false;
-            if(fNombre && !r.nombreEstudiante.toLowerCase().includes(fNombre)) return false;
-            if(fGrado && r.grado !== fGrado) return false;
-            return true;
-        });
-
-        if(filtrados.length === 0) { div.innerHTML = '<p class="text-center py-10 text-stone-400 text-xs font-black uppercase">No hay resultados que coincidan.</p>'; return; }
-
-        filtrados.forEach(res => {
-            let respuestasHtml = res.respuestas.map((r, i) => {
-                let icono = r.esCorrecta ? '✅' : '❌'; if (r.tipo === 'abierta') icono = '📝';
-                return `<div class="p-3 bg-white rounded-xl mb-2 border border-stone-200"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700 mt-1">${icono} Resp: ${r.respuestaDada}</p></div>`;
-            }).join("");
-
-            let btnArchivar = res.archived 
-                ? `<button onclick="toggleArchivarRes('${res.id}', false)" class="text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Desarchivar</button>`
-                : `<button onclick="toggleArchivarRes('${res.id}', true)" class="text-stone-500 bg-stone-200 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Archivar Nota</button>`;
-
-            let bloqueNotaHtml = res.requiereRevision ? `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR TEXTO</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>` : `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
-
-            div.innerHTML += `
-                <div class="card p-5 border ${res.requiereRevision ? 'border-orange-300 bg-orange-50/20' : 'border-stone-200'}">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p>
-                            <h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3>
-                            <p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p>
-                        </div>
-                        ${bloqueNotaHtml}
-                    </div>
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <button onclick="document.getElementById('acc-${res.id}').classList.toggle('hidden')" class="bg-blue-50 text-blue-700 text-[10px] font-black px-3 py-2 rounded-lg uppercase flex items-center gap-1">👁️ Visualizar</button>
-                        <button onclick="descargarPDFIndividual('${res.id}')" class="bg-red-50 text-red-700 text-[10px] font-black px-3 py-2 rounded-lg uppercase">📄 PDF</button>
-                        ${btnArchivar}
-                        <button onclick="habilitarReintento('${res.id}')" class="text-red-600 text-[10px] font-black uppercase px-3 py-2 rounded-lg ml-auto border border-red-200">Borrar Intento</button>
-                    </div>
-                    <div id="acc-${res.id}" class="hidden bg-stone-50 p-3 rounded-xl border border-stone-200">${respuestasHtml}</div>
-                </div>`;
-        });
+    async function calificarManual(docId) {
+        const inputVal = document.getElementById(`nota-${docId}`).value;
+        const notaDefinitiva = parseFloat(inputVal.replace(',', '.'));
+        if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa una nota válida entre 0 y 5.0"); }
+        await db.collection("resultadosTalleres").doc(docId).update({ nota: notaDefinitiva, requiereRevision: false });
     }
-
-    async function toggleArchivarRes(id, state) { await db.collection("resultadosTalleres").doc(id).update({ archived: state }); }
-    async function calificarManual(docId) { const inputVal = document.getElementById(`nota-${docId}`).value; const notaDefinitiva = parseFloat(inputVal.replace(',', '.')); if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa nota válida."); } await db.collection("resultadosTalleres").doc(docId).update({ nota: notaDefinitiva, requiereRevision: false }); }
-    async function habilitarReintento(docId) { if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota actual.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("resultadosTalleres").doc(docId).delete(); Swal.fire('Habilitado', 'El estudiante puede volver a entrar.', 'success'); } }
-
-    function descargarReporteGeneralPDF() {
+    async function habilitarReintento(docId) {
+        if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) {
+            await db.collection("resultadosTalleres").doc(docId).delete();
+            Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success');
+        }
+    }
+    function descargarReportePDF() {
+        if(cacheResultados.length === 0) return alert("No hay datos para exportar.");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
-        const filtrados = cacheResultadosLocal.filter(r => {
-            const fNombre = document.getElementById("buscarEstudiante").value.toLowerCase();
-            const fGrado = document.getElementById("buscarGrado").value;
-            if(estadoResultados === 'archivados' && !r.archived) return false;
-            if(estadoResultados === 'activos' && r.archived) return false;
-            if(fNombre && !r.nombreEstudiante.toLowerCase().includes(fNombre)) return false;
-            if(fGrado && r.grado !== fGrado) return false;
-            return true;
-        });
-        if(filtrados.length === 0) return alert("No hay datos en el filtro actual.");
-        const body = filtrados.map(r => [r.grado, r.nombreEstudiante, r.tituloTaller, r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1), r.fecha]);
+        const body = cacheResultados.map(r => { const notaCelda = r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1); return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; });
         doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
-        doc.save("Reporte_Lectura_General.pdf");
+        doc.save("Reporte_Lectura_Oscar.pdf");
     }
-
-    function descargarPDFIndividual(id) {
-        const res = cacheResultadosLocal.find(r => r.id === id); if(!res) return;
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(14); doc.text("REPORTE INDIVIDUAL DE ACTIVIDAD", 10, 15);
-        doc.setFontSize(10); doc.text(`Estudiante: ${res.nombreEstudiante}`, 10, 25); doc.text(`Grado: ${res.grado}`, 10, 30); doc.text(`Actividad: ${res.tituloTaller}`, 10, 35); doc.text(`Nota Final: ${res.requiereRevision ? 'Pendiente de revisión' : res.nota.toFixed(1)}`, 10, 40); doc.text(`Fecha: ${res.fecha}`, 10, 45);
-        const body = res.respuestas.map((r, i) => [`P${i+1}: ${r.pregunta}`, r.respuestaDada, r.esCorrecta ? 'Correcta' : (r.tipo==='abierta'?'Abierta':'Incorrecta')]);
-        doc.autoTable({ startY: 55, head: [['PREGUNTA', 'RESPUESTA DEL ESTUDIANTE', 'ESTADO']], body: body, headStyles: { fillColor: [107, 33, 168] }, columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 80 } } });
-        doc.save(`Prueba_${res.nombreEstudiante.replace(/ /g, '_')}.pdf`);
-    }
-
-    window.onload = function() {
-        const selectDoc = document.getElementById("targetStudentDoc");
-        estudiantesValidos.forEach(e => { selectDoc.innerHTML += `<option value="${e.doc}">${e.nombre} (${e.grado})</option>`; });
-        cargarTalleres();
-    };
+    window.onload = cargarTalleres;
   </script>
 </body>
 </html>
