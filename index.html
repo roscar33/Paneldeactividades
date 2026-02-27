@@ -69,7 +69,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                <select id="tipoActividad" class="w-full text-xs font-bold bg-stone-50"><option value="">Tipo...</option><option>Taller de Comprensión Lectora</option><option>Taller Evaluativo</option><option>Taller de Refuerzo</option><option>Taller de Repaso</option></select>
+                <select id="tipoActividad" class="w-full text-xs font-bold bg-stone-50"><option value="">Tipo...</option><option>Taller de Comprensión Lectora</option><option>Taller Evaluativo</option><option>Taller de Refuerzo</option><option>Taller de Repaso</option><option>Taller de ambientación previa</option><option>Taller de recuperación</option></select>
                 <select id="areaConocimiento" class="w-full text-xs font-bold bg-stone-50"><option value="">Área...</option><option>ESPAÑOL (LENGUAJE)</option><option>MATEMATICAS</option><option>CIENCIAS NATURALES</option><option>CIENCIAS SOCIALES</option><option>INGLES</option><option>ARTISTICA</option><option>EDUCACION FISICA</option><option>ETICA Y VALORES</option><option>RELIGION</option><option>TECNOLOGIA E INFORMATICA</option></select>
             </div>
 
@@ -80,7 +80,7 @@
                 <input type="url" id="videoTaller" placeholder="URL de Video YouTube (Opcional)" class="w-full text-xs font-bold">
             </div>
 
-            <div id="contenedorPreguntas" class="space-y-6 border-t pt-4"></div>
+            <div id="contenedorPreguntas" class="space-y-6 border-t pt-4 flex flex-col"></div>
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <button onclick="agregarPregunta('multiple')" class="py-3 bg-purple-50 text-purple-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-purple-200 hover:bg-purple-100">+ Múltiple</button>
@@ -161,6 +161,17 @@
         }
     }
 
+    // Funciones para reordenar preguntas
+    function moverPreguntaArriba(btn) {
+        const div = btn.closest('div[id^="pregunta-"]');
+        if (div.previousElementSibling) div.parentNode.insertBefore(div, div.previousElementSibling);
+    }
+
+    function moverPreguntaAbajo(btn) {
+        const div = btn.closest('div[id^="pregunta-"]');
+        if (div.nextElementSibling) div.parentNode.insertBefore(div.nextElementSibling, div);
+    }
+
     function agregarPregunta(tipo, data = null) {
       const id = Date.now() + Math.random();
       const div = document.createElement('div');
@@ -176,13 +187,20 @@
       div.id = `pregunta-${id}`;
       div.dataset.tipo = tipo;
       
-      let html = `<button onclick="this.parentElement.remove()" class="absolute top-3 right-3 text-stone-300 hover:text-red-500">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="${tipo==='completacion'?'Instrucción para el estudiante...':'Enunciado de la pregunta...'}" class="w-full mb-4 text-xs font-bold q-text">`;
+      let html = `
+      <div class="absolute top-3 right-12 flex gap-1">
+          <button onclick="moverPreguntaArriba(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Subir">▲</button>
+          <button onclick="moverPreguntaAbajo(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Bajar">▼</button>
+      </div>
+      <button onclick="this.parentElement.remove()" class="absolute top-3 right-3 w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-300 rounded hover:bg-red-100 hover:text-red-500 transition-colors text-xs" title="Eliminar">✕</button>
+      <input type="text" value="${data?data.pregunta:''}" placeholder="${tipo==='completacion'?'Instrucción para el estudiante...':'Enunciado de la pregunta...'}" class="w-full mb-4 mt-2 text-xs font-bold q-text">`;
       
       if (tipo === 'multiple') {
         html += `<div class="space-y-2">
             <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones?.a||'':''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div>
             <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones?.b||'':''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div>
             <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones?.c||'':''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="d" ${data?.correcta==='d'?'checked':''}> <input type="text" value="${data?data.opciones?.d||'':''}" placeholder="Opción D" class="w-full text-[11px] opt-d"></div>
         </div>`;
       } else if (tipo === 'verdadero_falso') {
         html += `<div class="flex gap-4"><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="verdadero" ${data?.correcta==='verdadero'?'checked':(!data?'checked':'')}> Verdadero</label><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="falso" ${data?.correcta==='falso'?'checked':''}> Falso</label></div>`;
@@ -219,7 +237,7 @@
             const t = div.dataset.tipo;
             const qId = div.id.split('-')[1];
             const pText = div.querySelector('.q-text').value;
-            if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
+            if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value, d:div.querySelector('.opt-d').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='completacion') resps.push({tipo:t, pregunta:pText, textoConcepto:div.querySelector('.comp-texto').value, palabrasCorrectas:div.querySelector('.comp-respuestas').value});
             else if(t==='ahorcado') resps.push({tipo:t, pregunta:pText, palabraOculta:div.querySelector('.ahorcado-palabra').value, pistas:div.querySelector('.ahorcado-pistas').value});
@@ -429,12 +447,11 @@
         db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
             cacheResultados = [];
             snap.forEach(doc => { cacheResultados.push({id: doc.id, ...doc.data()}) });
-            actualizarDropdownActividades(); // Llenar el select dinámicamente
+            actualizarDropdownActividades(); 
             renderizarResultados();
         });
     }
 
-    // NUEVA FUNCIÓN PARA EL SELECT DE ACTIVIDADES
     function actualizarDropdownActividades() {
         const select = document.getElementById('busqueda-actividad');
         if(!select) return;
@@ -456,14 +473,12 @@
         
         const termEstudiante = document.getElementById('busqueda-estudiante') ? document.getElementById('busqueda-estudiante').value.toLowerCase() : '';
         const termGrado = document.getElementById('busqueda-grado') ? document.getElementById('busqueda-grado').value : '';
-        const termActividad = document.getElementById('busqueda-actividad') ? document.getElementById('busqueda-actividad').value : ''; // Ahora lee el select
+        const termActividad = document.getElementById('busqueda-actividad') ? document.getElementById('busqueda-actividad').value : ''; 
 
         resultadosFiltrados = cacheResultados.filter(r => {
             const estadoMatch = filtroResultados === 'archivados' ? r.archived === true : !r.archived;
             const estudianteMatch = (r.nombreEstudiante || '').toLowerCase().includes(termEstudiante);
             const gradoMatch = termGrado === '' || r.grado === termGrado;
-            
-            // Compara el select con el título. Si el select está vacío (""), muestra todas.
             const actividadMatch = termActividad === '' || r.tituloTaller === termActividad; 
             
             return estadoMatch && estudianteMatch && gradoMatch && actividadMatch;
@@ -483,7 +498,12 @@
             if (res.requiereRevision) {
                 bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`;
             } else {
-                bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
+                let notaFinalVisual = parseFloat(res.nota) || 0;
+                if (notaFinalVisual > 5 && res.totalCerradas) {
+                    notaFinalVisual = (notaFinalVisual / res.totalCerradas) * 5.0;
+                }
+                
+                bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${notaFinalVisual >= 3 ? 'text-green-600' : 'text-red-600'}">${notaFinalVisual.toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final (Max 5.0)</p></div>`;
             }
 
             let btnArchivarRes = res.archived 
@@ -545,7 +565,14 @@
         if(resultadosFiltrados.length === 0) return alert("No hay datos para exportar con los filtros actuales.");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
-        const body = resultadosFiltrados.map(r => { const notaCelda = r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1); return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; });
+        
+        const body = resultadosFiltrados.map(r => { 
+            let notaFinalPDF = parseFloat(r.nota) || 0;
+            if (notaFinalPDF > 5 && r.totalCerradas) notaFinalPDF = (notaFinalPDF / r.totalCerradas) * 5.0;
+            const notaCelda = r.requiereRevision ? 'Pendiente' : notaFinalPDF.toFixed(1); 
+            return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; 
+        });
+        
         doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
         doc.save("Reporte_Lectura_Oscar.pdf");
     }
