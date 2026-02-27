@@ -53,6 +53,13 @@
                 </div>
             </div>
 
+            <div class="mt-2">
+                <label class="text-[10px] font-black text-stone-500 uppercase px-1">Asignar a estudiante en específico (Opcional):</label>
+                <select id="estudianteEspecifico" class="w-full text-xs font-bold bg-stone-50 mt-1">
+                    <option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>
+                </select>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                 <input type="text" id="tituloTaller" placeholder="Título de la actividad..." class="w-full text-xs font-bold">
                 <div class="flex flex-col">
@@ -75,10 +82,12 @@
 
             <div id="contenedorPreguntas" class="space-y-6 border-t pt-4"></div>
 
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <button onclick="agregarPregunta('multiple')" class="py-3 bg-purple-50 text-purple-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-purple-200 hover:bg-purple-100">+ Múltiple</button>
                 <button onclick="agregarPregunta('verdadero_falso')" class="py-3 bg-green-50 text-green-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-green-200 hover:bg-green-100">+ V / F</button>
                 <button onclick="agregarPregunta('abierta')" class="py-3 bg-blue-50 text-blue-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-blue-200 hover:bg-blue-100">+ Abierta</button>
+                <button onclick="agregarPregunta('completacion')" class="py-3 bg-yellow-50 text-yellow-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-yellow-200 hover:bg-yellow-100">+ Completar</button>
+                <button onclick="agregarPregunta('ahorcado')" class="py-3 bg-red-50 text-red-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-red-200 hover:bg-red-100">+ Ahorcado</button>
             </div>
 
             <div class="flex gap-3 pt-4 border-t">
@@ -98,9 +107,13 @@
     </div>
 
     <div id="view-resultados" class="hidden space-y-6">
-        <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+        <div class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-sm gap-3">
             <h2 class="text-xs font-black uppercase text-stone-500">Historial de Respuestas</h2>
-            <button onclick="descargarReportePDF()" class="bg-red-600 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase shadow-lg flex items-center gap-2 active:scale-95">📄 Exportar PDF</button>
+            <div class="flex gap-2">
+                <button onclick="setFiltroResultados('activos')" id="filtro-res-activos" class="bg-purple-100 text-purple-800 text-[9px] font-black px-3 py-2 rounded-lg uppercase">Activos</button>
+                <button onclick="setFiltroResultados('archivados')" id="filtro-res-archivados" class="bg-stone-100 text-stone-500 text-[9px] font-black px-3 py-2 rounded-lg uppercase">Archivados</button>
+                <button onclick="descargarReportePDF()" class="bg-red-600 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase shadow-lg flex items-center gap-2 active:scale-95">📄 Exportar PDF</button>
+            </div>
         </div>
         <div id="listaResultados" class="space-y-4"></div>
     </div>
@@ -111,6 +124,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let tallerEditandoId = null;
+
+    let listaEstudiantesGlobal = [];
 
     function switchTab(tab) {
         document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
@@ -134,19 +149,38 @@
     function agregarPregunta(tipo, data = null) {
       const id = Date.now() + Math.random();
       const div = document.createElement('div');
-      div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${tipo === 'multiple' ? 'border-purple-100 bg-white' : (tipo === 'abierta' ? 'border-blue-100 bg-blue-50/30' : 'border-green-100 bg-green-50/30')}`;
+      
+      let bgClass = '';
+      if(tipo === 'multiple') bgClass = 'border-purple-100 bg-white';
+      else if(tipo === 'abierta') bgClass = 'border-blue-100 bg-blue-50/30';
+      else if(tipo === 'completacion') bgClass = 'border-yellow-100 bg-yellow-50/30';
+      else if(tipo === 'ahorcado') bgClass = 'border-red-100 bg-red-50/30';
+      else bgClass = 'border-green-100 bg-green-50/30';
+
+      div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${bgClass}`;
       div.id = `pregunta-${id}`;
       div.dataset.tipo = tipo;
       
-      let html = `<button onclick="this.parentElement.remove()" class="absolute top-3 right-3 text-stone-300 hover:text-red-500">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="Enunciado de la pregunta..." class="w-full mb-4 text-xs font-bold q-text">`;
+      let html = `<button onclick="this.parentElement.remove()" class="absolute top-3 right-3 text-stone-300 hover:text-red-500">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="${tipo==='completacion'?'Instrucción para el estudiante...':'Enunciado de la pregunta...'}" class="w-full mb-4 text-xs font-bold q-text">`;
+      
       if (tipo === 'multiple') {
         html += `<div class="space-y-2">
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones.a:''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div>
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones.b:''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div>
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones.c:''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones?.a||'':''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones?.b||'':''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div>
+            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones?.c||'':''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div>
         </div>`;
       } else if (tipo === 'verdadero_falso') {
         html += `<div class="flex gap-4"><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="verdadero" ${data?.correcta==='verdadero'?'checked':(!data?'checked':'')}> Verdadero</label><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="falso" ${data?.correcta==='falso'?'checked':''}> Falso</label></div>`;
+      } else if (tipo === 'completacion') {
+        html += `<div class="space-y-2">
+            <textarea placeholder="Texto con espacios. Ej: La capital de Colombia es ___" class="w-full text-[11px] font-bold comp-texto">${data?data.textoConcepto||'':''}</textarea>
+            <input type="text" value="${data?data.palabrasCorrectas||'':''}" placeholder="Palabras correctas separadas por coma" class="w-full text-[11px] comp-respuestas">
+        </div>`;
+      } else if (tipo === 'ahorcado') {
+        html += `<div class="space-y-2">
+            <input type="text" value="${data?data.palabraOculta||'':''}" placeholder="Palabra o frase a descubrir..." class="w-full text-[11px] font-bold ahorcado-palabra">
+            <input type="text" value="${data?data.pistas||'':''}" placeholder="Letras pista iniciales separadas por coma (Opcional)" class="w-full text-[11px] ahorcado-pistas">
+        </div>`;
       }
       div.innerHTML = html;
       document.getElementById('contenedorPreguntas').appendChild(div);
@@ -162,6 +196,8 @@
         const imgUrl = document.getElementById('imagenTaller').value.trim();
         const vidUrl = document.getElementById('videoTaller').value.trim();
         
+        const estudianteEsp = document.getElementById('estudianteEspecifico').value.trim();
+
         const divs = document.querySelectorAll('[id^="pregunta-"]');
         let resps = [];
         divs.forEach(div => {
@@ -170,10 +206,15 @@
             const pText = div.querySelector('.q-text').value;
             if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
+            else if(t==='completacion') resps.push({tipo:t, pregunta:pText, textoConcepto:div.querySelector('.comp-texto').value, palabrasCorrectas:div.querySelector('.comp-respuestas').value});
+            else if(t==='ahorcado') resps.push({tipo:t, pregunta:pText, palabraOculta:div.querySelector('.ahorcado-palabra').value, pistas:div.querySelector('.ahorcado-pistas').value});
             else resps.push({tipo:t, pregunta:pText});
         });
 
-        if(!grados.length || !titulo || !tipo || !area || !fechaVencimiento) return alert("Completa todos los campos principales (incluyendo Fecha de Cierre).");
+        const tieneDestinoValido = grados.length > 0 || estudianteEsp !== "";
+        if(!tieneDestinoValido || !titulo || !tipo || !area || !fechaVencimiento) {
+             return alert("Completa todos los campos principales. Selecciona un grado o un estudiante específico, además de Fecha de Cierre, Tipo y Área.");
+        }
         if(!texto && !imgUrl && !vidUrl) return alert("Debes incluir un texto, una imagen o un video.");
 
         document.getElementById('btnPublicar').disabled = true;
@@ -182,6 +223,7 @@
         const tallerData = { 
             titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, 
             gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaVencimiento: fechaVencimiento,
+            estudianteEspecifico: estudianteEsp, 
             preguntas: resps, status: status, activo: status === 'published', archived: false, 
             timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) 
         };
@@ -201,9 +243,11 @@
         if(generarAviso) {
             const fVencObj = new Date(fechaVencimiento);
             const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
+            let msgPrivado = estudianteEsp ? `\n👤 Asignación Privada` : '';
             await db.collection("tableroAvisos").add({
-                mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}`,
-                color: 'purple', scope: grados.includes('Todos') ? 'General' : 'Grado', targetGrades: grados,
+                mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`,
+                color: 'purple', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
+                targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null,
                 timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
             });
         }
@@ -229,6 +273,67 @@
       });
     }
 
+    async function reabrirActividad(id) {
+        const t = cacheTalleresLocal.find(x => x.id === id);
+        if(!t) return;
+
+        let swalOptions = '<option value="">Todos (Grupal)</option>';
+        listaEstudiantesGlobal.forEach(est => {
+            let isSelected = (est.documento === t.estudianteEspecifico) ? 'selected' : '';
+            swalOptions += `<option value="${est.documento}" ${isSelected}>${est.nombre} - ${est.grado}</option>`;
+        });
+
+        const { value: formValues } = await Swal.fire({
+            title: 'Reabrir / Extender / Reintento',
+            html:
+                `<div class="text-left space-y-3">
+                    <label class="text-xs font-bold text-stone-600 block">Nueva Fecha de Cierre:</label>
+                    <input id="swal-fecha" type="datetime-local" class="swal2-input !w-[90%] !text-sm !m-0" value="${t.fechaVencimiento || ''}">
+                    <label class="text-xs font-bold text-stone-600 block mt-4">Asignar a un estudiante (Borra el intento anterior si lo hay):</label>
+                    <select id="swal-estudiante" class="swal2-select !w-[90%] !text-sm !m-0">
+                        ${swalOptions}
+                    </select>
+                </div>`,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar y Habilitar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                return [document.getElementById('swal-fecha').value, document.getElementById('swal-estudiante').value]
+            }
+        });
+
+        if (formValues) {
+            const nuevaFecha = formValues[0];
+            const nuevoEstudianteDoc = formValues[1].trim();
+            
+            if(!nuevaFecha) return alert("Debes seleccionar una fecha obligatoriamente.");
+            
+            // 1. Actualiza la fecha y el estudiante en el taller
+            await db.collection("talleresLectura").doc(id).update({
+                fechaVencimiento: nuevaFecha,
+                estudianteEspecifico: nuevoEstudianteDoc,
+                activo: true, 
+                archived: false, 
+                status: 'published'
+            });
+
+            // 2. Si se asignó a un estudiante, busca su intento anterior y lo borra automáticamente
+            if (nuevoEstudianteDoc) {
+                const resultadosSnap = await db.collection("resultadosTalleres")
+                    .where("idTaller", "==", id)
+                    .where("documentoEstudiante", "==", nuevoEstudianteDoc)
+                    .get();
+                
+                resultadosSnap.forEach(async (doc) => {
+                    await db.collection("resultadosTalleres").doc(doc.id).delete();
+                });
+            }
+
+            Swal.fire('¡Habilitado!', 'La actividad ha sido reabierta y el intento anterior borrado (si existía).', 'success');
+        }
+    }
+
     function renderizarTalleres() {
         const lista = document.getElementById('listaTalleres');
         lista.innerHTML = "";
@@ -246,17 +351,26 @@
                 ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
                 : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
             let btnEditar = !t.archived ? `<button onclick="editarTaller('${t.id}')" class="text-blue-700 text-[10px] font-black uppercase bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200">Editar</button>` : '';
+            let btnReabrir = (t.status === 'published' || t.archived) ? `<button onclick="reabrirActividad('${t.id}')" class="text-indigo-700 text-[10px] font-black uppercase bg-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-200">Reabrir / Extender</button>` : '';
+
+            let nombreEstudiante = t.estudianteEspecifico;
+            let matchEst = listaEstudiantesGlobal.find(e => e.documento === t.estudianteEspecifico);
+            if(matchEst) nombreEstudiante = matchEst.nombre;
+
+            let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
 
             lista.innerHTML += `
               <div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}">
                 <div class="flex justify-between items-start mb-4">
                   <div class="flex-1 pr-2">
-                      <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.join(', ')}</span>
+                      <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.length ? t.gradoDestino.join(', ') : 'Privado'}</span>
+                      ${badgeEstudiante}
                       <h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3>
                       <p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p>
                   </div>
                 </div>
                 <div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">
+                    ${btnReabrir}
                     ${btnEditar}
                     ${btnArchivar}
                     <button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button>
@@ -271,13 +385,14 @@
         tallerEditandoId = id;
         document.getElementById('form-title').innerText = "Editando: " + t.titulo;
         document.getElementById('tituloTaller').value = t.titulo;
+        document.getElementById('estudianteEspecifico').value = t.estudianteEspecifico || '';
         document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
         document.getElementById('textoLectura').value = t.contenido;
         document.getElementById('imagenTaller').value = t.imageUrl || '';
         document.getElementById('videoTaller').value = t.videoUrl || '';
         document.getElementById('tipoActividad').value = t.tipoActividad;
         document.getElementById('areaConocimiento').value = t.areaConocimiento;
-        document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
+        document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino && t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
         document.getElementById('contenedorPreguntas').innerHTML = "";
         t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
         document.getElementById('form-title').scrollIntoView({ behavior: 'smooth' });
@@ -287,27 +402,73 @@
     async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar Definitivamente?', text:'Esta acción no se puede deshacer.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
 
     let cacheResultados = [];
+    let filtroResultados = 'activos';
+
+    function setFiltroResultados(filtro) {
+        filtroResultados = filtro;
+        document.getElementById('filtro-res-activos').className = `text-[9px] font-black px-3 py-2 rounded-lg uppercase transition-all ${filtro==='activos'?'bg-purple-100 text-purple-800 shadow-sm':'bg-stone-100 text-stone-500 hover:bg-stone-200'}`;
+        document.getElementById('filtro-res-archivados').className = `text-[9px] font-black px-3 py-2 rounded-lg uppercase transition-all ${filtro==='archivados'?'bg-purple-100 text-purple-800 shadow-sm':'bg-stone-100 text-stone-500 hover:bg-stone-200'}`;
+        renderizarResultados();
+    }
+
     function cargarResultados() {
         db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
             cacheResultados = [];
-            const div = document.getElementById("listaResultados");
-            div.innerHTML = snap.empty ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas aún</p>' : "";
-            snap.forEach(doc => {
-                const res = doc.data();
-                cacheResultados.push(res);
-                let respuestasHtml = res.respuestas.map((r, i) => {
-                    let icono = r.esCorrecta ? '✅' : '❌';
-                    if (r.tipo === 'abierta') icono = '📝';
-                    return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`;
-                }).join("");
-                let bloqueNotaHtml = "";
-                if (res.requiereRevision) {
-                    bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${doc.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${doc.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`;
-                } else {
-                    bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
-                }
-                div.innerHTML += `<div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}"><div class="flex justify-between items-start mb-4"><div><p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p><h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3><p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p></div>${bloqueNotaHtml}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">${respuestasHtml}</div><div class="border-t border-stone-200 pt-3 text-right"><button onclick="habilitarReintento('${doc.id}')" class="text-red-600 text-[10px] font-black uppercase bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">Borrar y habilitar reintento</button></div></div>`;
-            });
+            snap.forEach(doc => { cacheResultados.push({id: doc.id, ...doc.data()}) });
+            renderizarResultados();
+        });
+    }
+
+    function renderizarResultados() {
+        const div = document.getElementById("listaResultados");
+        let filtrados = cacheResultados.filter(r => filtroResultados === 'archivados' ? r.archived === true : !r.archived);
+        
+        div.innerHTML = filtrados.length === 0 ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas en esta categoría</p>' : "";
+        
+        filtrados.forEach(res => {
+            let respuestasHtml = res.respuestas.map((r, i) => {
+                let icono = r.esCorrecta ? '✅' : '❌';
+                if (r.tipo === 'abierta' || r.tipo === 'completacion') icono = '📝';
+                if (r.tipo === 'ahorcado') icono = '🎮';
+                return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`;
+            }).join("");
+            
+            let bloqueNotaHtml = "";
+            if (res.requiereRevision) {
+                bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`;
+            } else {
+                bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${res.nota >= 3 ? 'text-green-600' : 'text-red-600'}">${parseFloat(res.nota).toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final</p></div>`;
+            }
+
+            let btnArchivarRes = res.archived 
+                ? `<button onclick="toggleArchivarResultado('${res.id}', false)" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
+                : `<button onclick="toggleArchivarResultado('${res.id}', true)" class="text-stone-700 text-[10px] font-black uppercase bg-stone-200 px-3 py-2 rounded-lg hover:bg-stone-300">Archivar</button>`;
+
+            // AQUÍ ESTÁ EL BOTÓN DE REINTENTO QUE SÍ SE MUESTRA EN EL PANEL DE RESULTADOS
+            div.innerHTML += `
+            <div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p>
+                        <div class="flex items-center gap-3">
+                            <h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3>
+                            <button onclick="document.getElementById('respuestas-${res.id}').classList.toggle('hidden')" class="bg-stone-200 text-stone-700 text-[9px] font-black px-3 py-1.5 rounded-lg hover:bg-stone-300 transition-all active:scale-95 shadow-sm">👁️ VISUALIZAR</button>
+                        </div>
+                        <p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p>
+                    </div>
+                    ${bloqueNotaHtml}
+                </div>
+                
+                <div id="respuestas-${res.id}" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 bg-stone-100 p-3 rounded-xl border border-stone-200">
+                    ${respuestasHtml}
+                </div>
+                
+                <div class="border-t border-stone-200 pt-3 flex flex-wrap gap-2 justify-end">
+                    <button onclick="habilitarReintento('${res.id}')" class="text-purple-700 text-[10px] font-black uppercase bg-purple-100 px-3 py-2 rounded-lg hover:bg-purple-200">🔄 Habilitar Reintento</button>
+                    ${btnArchivarRes}
+                    <button onclick="eliminarResultadoDefinitivo('${res.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-2 rounded-lg hover:bg-red-200">Eliminar Definitivo</button>
+                </div>
+            </div>`;
         });
     }
 
@@ -317,12 +478,24 @@
         if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa una nota válida entre 0 y 5.0"); }
         await db.collection("resultadosTalleres").doc(docId).update({ nota: notaDefinitiva, requiereRevision: false });
     }
+
     async function habilitarReintento(docId) {
         if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) {
             await db.collection("resultadosTalleres").doc(docId).delete();
             Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success');
         }
     }
+
+    async function toggleArchivarResultado(id, isArchiving) {
+        await db.collection("resultadosTalleres").doc(id).update({ archived: isArchiving });
+    }
+
+    async function eliminarResultadoDefinitivo(id) {
+        if((await Swal.fire({title:'¿Eliminar Resultado?', text:'Esta acción borrará la nota permanentemente de la base de datos.', icon:'error', showCancelButton:true, confirmButtonText: 'Sí, eliminar', confirmButtonColor:'#d33'})).isConfirmed) { 
+            await db.collection("resultadosTalleres").doc(id).delete(); 
+        }
+    }
+
     function descargarReportePDF() {
         if(cacheResultados.length === 0) return alert("No hay datos para exportar.");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
@@ -331,7 +504,52 @@
         doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
         doc.save("Reporte_Lectura_Oscar.pdf");
     }
-    window.onload = cargarTalleres;
+
+    function cargarListaEstudiantes() {
+        db.collection("configuracionGlobal").doc("listasEstudiantes").get().then(doc => {
+            if (doc.exists) {
+                const listas = doc.data();
+                
+                if (!listas['Quinto']) listas['Quinto'] = [];
+                const pedroData = "Pedro Pérez - 12345678";
+                if (!listas['Quinto'].includes(pedroData)) {
+                    listas['Quinto'].push(pedroData);
+                    db.collection("configuracionGlobal").doc("listasEstudiantes").update({
+                        'Quinto': firebase.firestore.FieldValue.arrayUnion(pedroData)
+                    });
+                }
+
+                listaEstudiantesGlobal = [];
+                for (const grado in listas) {
+                    const estudiantes = listas[grado];
+                    if (Array.isArray(estudiantes)) {
+                        estudiantes.forEach(estudianteStr => {
+                            const partes = estudianteStr.split(' - ');
+                            const nombre = partes[0].trim();
+                            const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre;
+                            listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado });
+                        });
+                    }
+                }
+                
+                listaEstudiantesGlobal.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+                const selectEl = document.getElementById('estudianteEspecifico');
+                let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
+                
+                listaEstudiantesGlobal.forEach(est => {
+                    htmlOptions += `<option value="${est.documento}">${est.nombre} - ${est.grado}</option>`;
+                });
+                
+                selectEl.innerHTML = htmlOptions; 
+            }
+        }).catch(err => console.error("Error cargando lista de estudiantes: ", err));
+    }
+
+    window.onload = () => { 
+        cargarTalleres(); 
+        cargarListaEstudiantes(); 
+    };
   </script>
 </body>
 </html>
