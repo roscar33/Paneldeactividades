@@ -110,10 +110,25 @@
         <div class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-sm gap-3">
             <h2 class="text-xs font-black uppercase text-stone-500">Historial de Respuestas</h2>
             <div class="flex gap-2">
-                <button onclick="setFiltroResultados('activos')" id="filtro-res-activos" class="bg-purple-100 text-purple-800 text-[9px] font-black px-3 py-2 rounded-lg uppercase">Activos</button>
-                <button onclick="setFiltroResultados('archivados')" id="filtro-res-archivados" class="bg-stone-100 text-stone-500 text-[9px] font-black px-3 py-2 rounded-lg uppercase">Archivados</button>
+                <button onclick="setFiltroResultados('activos')" id="filtro-res-activos" class="bg-purple-100 text-purple-800 text-[9px] font-black px-3 py-2 rounded-lg uppercase shadow-sm">Activos</button>
+                <button onclick="setFiltroResultados('archivados')" id="filtro-res-archivados" class="bg-stone-100 text-stone-500 text-[9px] font-black px-3 py-2 rounded-lg uppercase hover:bg-stone-200">Archivados</button>
                 <button onclick="descargarReportePDF()" class="bg-red-600 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase shadow-lg flex items-center gap-2 active:scale-95">📄 Exportar PDF</button>
             </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+            <input type="text" id="busqueda-estudiante" oninput="renderizarResultados()" placeholder="🔍 Buscar Estudiante..." class="w-full text-xs font-bold bg-stone-50 border-stone-200">
+            <select id="busqueda-grado" onchange="renderizarResultados()" class="w-full md:w-48 text-xs font-bold bg-stone-50 border-stone-200">
+                <option value="">Todos los Grados</option>
+                <option value="Primero">Primero</option>
+                <option value="Segundo">Segundo</option>
+                <option value="Tercero">Tercero</option>
+                <option value="Cuarto">Cuarto</option>
+                <option value="Quinto">Quinto</option>
+            </select>
+            <select id="busqueda-actividad" onchange="renderizarResultados()" class="w-full text-xs font-bold bg-stone-50 border-stone-200">
+                <option value="">Todas las Actividades</option>
+            </select>
         </div>
         <div id="listaResultados" class="space-y-4"></div>
     </div>
@@ -309,7 +324,6 @@
             
             if(!nuevaFecha) return alert("Debes seleccionar una fecha obligatoriamente.");
             
-            // 1. Actualiza la fecha y el estudiante en el taller
             await db.collection("talleresLectura").doc(id).update({
                 fechaVencimiento: nuevaFecha,
                 estudianteEspecifico: nuevoEstudianteDoc,
@@ -318,7 +332,6 @@
                 status: 'published'
             });
 
-            // 2. Si se asignó a un estudiante, busca su intento anterior y lo borra automáticamente
             if (nuevoEstudianteDoc) {
                 const resultadosSnap = await db.collection("resultadosTalleres")
                     .where("idTaller", "==", id)
@@ -403,6 +416,7 @@
 
     let cacheResultados = [];
     let filtroResultados = 'activos';
+    let resultadosFiltrados = []; 
 
     function setFiltroResultados(filtro) {
         filtroResultados = filtro;
@@ -415,17 +429,49 @@
         db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
             cacheResultados = [];
             snap.forEach(doc => { cacheResultados.push({id: doc.id, ...doc.data()}) });
+            actualizarDropdownActividades(); // Llenar el select dinámicamente
             renderizarResultados();
         });
     }
 
+    // NUEVA FUNCIÓN PARA EL SELECT DE ACTIVIDADES
+    function actualizarDropdownActividades() {
+        const select = document.getElementById('busqueda-actividad');
+        if(!select) return;
+        
+        const valorPrevio = select.value;
+        const actividadesUnicas = [...new Set(cacheResultados.map(r => r.tituloTaller))].filter(Boolean);
+        
+        let html = '<option value="">Todas las Actividades</option>';
+        actividadesUnicas.forEach(act => { 
+            html += `<option value="${act}">${act}</option>`; 
+        });
+        
+        select.innerHTML = html;
+        if(actividadesUnicas.includes(valorPrevio)) select.value = valorPrevio;
+    }
+
     function renderizarResultados() {
         const div = document.getElementById("listaResultados");
-        let filtrados = cacheResultados.filter(r => filtroResultados === 'archivados' ? r.archived === true : !r.archived);
         
-        div.innerHTML = filtrados.length === 0 ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas en esta categoría</p>' : "";
+        const termEstudiante = document.getElementById('busqueda-estudiante') ? document.getElementById('busqueda-estudiante').value.toLowerCase() : '';
+        const termGrado = document.getElementById('busqueda-grado') ? document.getElementById('busqueda-grado').value : '';
+        const termActividad = document.getElementById('busqueda-actividad') ? document.getElementById('busqueda-actividad').value : ''; // Ahora lee el select
+
+        resultadosFiltrados = cacheResultados.filter(r => {
+            const estadoMatch = filtroResultados === 'archivados' ? r.archived === true : !r.archived;
+            const estudianteMatch = (r.nombreEstudiante || '').toLowerCase().includes(termEstudiante);
+            const gradoMatch = termGrado === '' || r.grado === termGrado;
+            
+            // Compara el select con el título. Si el select está vacío (""), muestra todas.
+            const actividadMatch = termActividad === '' || r.tituloTaller === termActividad; 
+            
+            return estadoMatch && estudianteMatch && gradoMatch && actividadMatch;
+        });
         
-        filtrados.forEach(res => {
+        div.innerHTML = resultadosFiltrados.length === 0 ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas en esta categoría o filtro</p>' : "";
+        
+        resultadosFiltrados.forEach(res => {
             let respuestasHtml = res.respuestas.map((r, i) => {
                 let icono = r.esCorrecta ? '✅' : '❌';
                 if (r.tipo === 'abierta' || r.tipo === 'completacion') icono = '📝';
@@ -444,7 +490,6 @@
                 ? `<button onclick="toggleArchivarResultado('${res.id}', false)" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
                 : `<button onclick="toggleArchivarResultado('${res.id}', true)" class="text-stone-700 text-[10px] font-black uppercase bg-stone-200 px-3 py-2 rounded-lg hover:bg-stone-300">Archivar</button>`;
 
-            // AQUÍ ESTÁ EL BOTÓN DE REINTENTO QUE SÍ SE MUESTRA EN EL PANEL DE RESULTADOS
             div.innerHTML += `
             <div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}">
                 <div class="flex justify-between items-start mb-4">
@@ -497,10 +542,10 @@
     }
 
     function descargarReportePDF() {
-        if(cacheResultados.length === 0) return alert("No hay datos para exportar.");
+        if(resultadosFiltrados.length === 0) return alert("No hay datos para exportar con los filtros actuales.");
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
-        const body = cacheResultados.map(r => { const notaCelda = r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1); return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; });
+        const body = resultadosFiltrados.map(r => { const notaCelda = r.requiereRevision ? 'Pendiente' : parseFloat(r.nota).toFixed(1); return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; });
         doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
         doc.save("Reporte_Lectura_Oscar.pdf");
     }
