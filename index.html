@@ -85,11 +85,17 @@
                 </select>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                <input type="text" id="tituloTaller" placeholder="Título de la actividad..." class="w-full text-xs font-bold">
-                <div class="flex flex-col">
-                    <span class="text-[9px] font-black text-red-600 uppercase px-1 mb-1">Fecha y Hora de Cierre:</span>
-                    <input type="datetime-local" id="fechaVencimiento" class="w-full text-xs font-bold bg-red-50 text-red-900 border-red-200">
+            <div class="mt-2">
+                <input type="text" id="tituloTaller" placeholder="Título de la actividad..." class="w-full text-xs font-bold mb-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-black text-blue-600 uppercase px-1 mb-1">Apertura (Opcional):</span>
+                        <input type="datetime-local" id="fechaPublicacion" class="w-full text-xs font-bold bg-blue-50 text-blue-900 border-blue-200" title="Si dejas en blanco, se publica inmediatamente">
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-black text-red-600 uppercase px-1 mb-1">Cierre (Obligatorio):</span>
+                        <input type="datetime-local" id="fechaVencimiento" class="w-full text-xs font-bold bg-red-50 text-red-900 border-red-200">
+                    </div>
                 </div>
             </div>
 
@@ -101,7 +107,13 @@
             <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí (Opcional si usas imagen/video)..." class="w-full text-sm font-medium mt-2"></textarea>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                <input type="url" id="imagenTaller" placeholder="URL de Imagen (Opcional)" class="w-full text-xs font-bold">
+                <div class="flex gap-2">
+                    <input type="text" id="imagenTaller" placeholder="URL de Imagen o sube una..." class="w-full text-xs font-bold flex-1">
+                    <label class="bg-stone-200 text-stone-600 px-3 py-3 rounded-xl cursor-pointer hover:bg-stone-300 text-xs font-bold flex items-center justify-center border-1.5 border-stone-300" title="Subir desde el equipo">
+                        📁
+                        <input type="file" id="fileImagenTaller" accept="image/*" class="hidden" onchange="convertirImagenABase64(event)">
+                    </label>
+                </div>
                 <input type="url" id="videoTaller" placeholder="URL de Video YouTube (Opcional)" class="w-full text-xs font-bold">
             </div>
 
@@ -114,6 +126,11 @@
                 <button onclick="agregarPregunta('completacion')" class="py-3 bg-yellow-50 text-yellow-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-yellow-200 hover:bg-yellow-100">+ Completar</button>
                 <button onclick="agregarPregunta('ahorcado')" class="py-3 bg-red-50 text-red-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-red-200 hover:bg-red-100">+ Ahorcado</button>
                 <button onclick="agregarPregunta('pareados')" class="py-3 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-indigo-200 hover:bg-indigo-100">+ Pareados</button>
+            </div>
+            
+            <div class="flex items-center gap-3 mt-4 p-3 bg-orange-50 rounded-xl border-2 border-orange-100">
+                <input type="checkbox" id="permitirProgreso" class="w-5 h-5 accent-orange-600 cursor-pointer">
+                <label for="permitirProgreso" class="text-[10px] font-black text-orange-800 uppercase cursor-pointer">Permitir al estudiante guardar progreso (Recomendado para talleres extensos)</label>
             </div>
 
             <div class="flex gap-2 pt-4 border-t">
@@ -170,6 +187,17 @@
 
     let listaEstudiantesGlobal = [];
 
+    // LÓGICA DE IMAGEN BASE64
+    function convertirImagenABase64(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('imagenTaller').value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
 
     function abrirVistaPrevia() {
@@ -179,6 +207,7 @@
         const vidUrl = document.getElementById('videoTaller').value.trim();
         const tipo = document.getElementById('tipoActividad').value || "TALLER";
         const area = document.getElementById('areaConocimiento').value || "ÁREA";
+        const permiteProgreso = document.getElementById('permitirProgreso').checked;
         
         let contenidoHtml = `<div style="text-align:center; margin-bottom:15px;"><span style="font-size:10px; font-weight:900; background:#475569; color:#fff; padding:5px 10px; border-radius:8px; text-transform:uppercase;">📚 ${area} | ${tipo}</span></div>`;
         contenidoHtml += `<div style="font-weight:900; color:#1b5e20; text-align:center; margin-bottom:15px; font-size:18px;">${titulo}</div>`;
@@ -252,6 +281,9 @@
             qIndex++;
         });
 
+        if (permiteProgreso) {
+            contenidoHtml += `<button disabled class="preview-btn" style="background:#f57c00; margin-bottom:10px;">💾 GUARDAR PROGRESO</button>`;
+        }
         contenidoHtml += `<button disabled class="preview-btn" style="margin-bottom:30px;">ENVIAR RESPUESTAS AL PROFESOR</button>`;
 
         document.getElementById('preview-body').innerHTML = contenidoHtml;
@@ -350,12 +382,14 @@
     async function guardarTaller(status) {
         const grados = Array.from(document.querySelectorAll('.badge-grado.selected')).map(b => b.getAttribute('value'));
         const titulo = document.getElementById('tituloTaller').value;
+        const fechaPublicacion = document.getElementById('fechaPublicacion').value; 
         const fechaVencimiento = document.getElementById('fechaVencimiento').value;
         const texto = document.getElementById('textoLectura').value;
         const tipo = document.getElementById('tipoActividad').value;
         const area = document.getElementById('areaConocimiento').value;
         const imgUrl = document.getElementById('imagenTaller').value.trim();
         const vidUrl = document.getElementById('videoTaller').value.trim();
+        const permitirProgreso = document.getElementById('permitirProgreso').checked;
         
         const estudianteEsp = document.getElementById('estudianteEspecifico').value.trim();
 
@@ -392,8 +426,9 @@
 
         const tallerData = { 
             titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, 
-            gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaVencimiento: fechaVencimiento,
-            estudianteEspecifico: estudianteEsp, 
+            gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, 
+            fechaPublicacion: fechaPublicacion, fechaVencimiento: fechaVencimiento,
+            estudianteEspecifico: estudianteEsp, permitirProgreso: permitirProgreso,
             preguntas: resps, status: status, activo: status === 'published', archived: false, 
             timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) 
         };
@@ -418,6 +453,7 @@
                 mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`,
                 color: 'purple', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
                 targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null,
+                publishAt: fechaPublicacion ? fechaPublicacion : null,
                 timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
             });
         }
@@ -526,13 +562,14 @@
             if(matchEst) nombreEstudiante = matchEst.nombre;
 
             let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
+            let badgeProgramado = (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">⏳ PROGRAMADO</span>` : '';
 
             lista.innerHTML += `
               <div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}">
                 <div class="flex justify-between items-start mb-4">
                   <div class="flex-1 pr-2">
                       <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.length ? t.gradoDestino.join(', ') : 'Privado'}</span>
-                      ${badgeEstudiante}
+                      ${badgeEstudiante}${badgeProgramado}
                       <h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3>
                       <p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p>
                   </div>
@@ -553,6 +590,7 @@
         tallerEditandoId = id;
         document.getElementById('form-title').innerText = "Editando: " + t.titulo;
         document.getElementById('tituloTaller').value = t.titulo;
+        document.getElementById('fechaPublicacion').value = t.fechaPublicacion || '';
         document.getElementById('estudianteEspecifico').value = t.estudianteEspecifico || '';
         document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
         document.getElementById('textoLectura').value = t.contenido;
@@ -560,6 +598,7 @@
         document.getElementById('videoTaller').value = t.videoUrl || '';
         document.getElementById('tipoActividad').value = t.tipoActividad;
         document.getElementById('areaConocimiento').value = t.areaConocimiento;
+        document.getElementById('permitirProgreso').checked = t.permitirProgreso || false;
         document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino && t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
         document.getElementById('contenedorPreguntas').innerHTML = "";
         t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
