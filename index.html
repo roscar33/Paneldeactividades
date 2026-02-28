@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestor de Lectura Pro v4.2</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Kalam:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lora:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -23,9 +27,33 @@
     .status-toggle.active::after { left: 22px; }
     .badge-grado { cursor: pointer; transition: 0.2s; }
     .badge-grado.selected { background-color: #6b21a8; color: white; border-color: #6b21a8; }
+
+    /* --- ESTILOS VISTA PREVIA (SIMULADOR CELULAR) --- */
+    #modal-preview { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+    .preview-device { background: #dff5e1; width: 100%; max-width: 380px; height: 90vh; border-radius: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; position: relative; border: 8px solid #333; }
+    .preview-header { background: #1b5e20; color: #fff; padding: 15px; text-align: center; font-weight: 800; font-size: 12px; text-transform: uppercase; border-radius: 0 0 25px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; font-family: system-ui, sans-serif; letter-spacing: 1px;}
+    .preview-content { padding: 20px; overflow-y: auto; flex: 1; font-family: system-ui, Arial, sans-serif; }
+    .preview-content .lectura-texto { background: #fff8e1; padding: 20px; border-radius: 16px; border: 1.5px solid #ffe082; font-family: 'Lora', serif; font-size: 15px; line-height: 1.7; color: #424242; margin-bottom: 25px; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+    .preview-content .pregunta-card { background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+    .preview-content .opcion-label { display: block; padding: 12px; background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; margin-top: 8px; font-size: 13px; font-weight: 600; cursor: default; }
+    .preview-content .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; overflow: hidden; border-radius: 12px; margin-bottom: 15px; background: #000; }
+    .preview-content .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    .preview-btn { width: 100%; padding: 15px; background: #0277bd; color: #fff; font-weight: 800; border: none; border-radius: 14px; font-size: 15px; box-shadow: 0 4px 0 #01579b; margin-top: 5px; opacity: 0.6; cursor: not-allowed;}
+    /* ------------------------------------------------ */
+
   </style>
 </head>
 <body class="p-4 pb-20">
+
+  <div id="modal-preview" onclick="cerrarVistaPrevia()">
+      <div class="preview-device" onclick="event.stopPropagation()">
+          <div class="preview-header">📱 VISTA PREVIA DEL ESTUDIANTE</div>
+          <div class="preview-content" id="preview-body"></div>
+          <div style="padding: 15px; text-align: center; background: #fff; border-top: 1px solid #ddd;">
+              <button onclick="cerrarVistaPrevia()" class="bg-red-600 text-white font-black uppercase text-[10px] px-6 py-3 rounded-xl shadow-lg active:scale-95 transition-all">✖ CERRAR SIMULADOR</button>
+          </div>
+      </div>
+  </div>
 
   <header class="max-w-4xl mx-auto mb-6 text-center">
     <h1 class="text-2xl font-black uppercase text-purple-900 tracking-tighter">Panel de Lectura Pro <span class="text-purple-500">v4.2</span></h1>
@@ -90,10 +118,12 @@
                 <button onclick="agregarPregunta('ahorcado')" class="py-3 bg-red-50 text-red-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-red-200 hover:bg-red-100">+ Ahorcado</button>
             </div>
 
-            <div class="flex gap-3 pt-4 border-t">
-                <button onclick="guardarTaller('draft')" id="btnBorrador" class="flex-1 py-4 bg-stone-200 text-stone-600 rounded-2xl font-black uppercase text-xs hover:bg-stone-300">Guardar Borrador</button>
-                <button onclick="guardarTaller('published')" id="btnPublicar" class="flex-[2] py-4 bg-purple-900 text-white rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-transform">Publicar en Escuela</button>
+            <div class="flex gap-2 pt-4 border-t">
+                <button onclick="abrirVistaPrevia()" id="btnPreview" class="flex-[1] py-4 bg-blue-50 text-blue-700 border-2 border-blue-200 rounded-2xl font-black shadow-sm uppercase text-[10px] hover:bg-blue-100 active:scale-95 transition-transform">👁️ Previa</button>
+                <button onclick="guardarTaller('draft')" id="btnBorrador" class="flex-[1.5] py-4 bg-stone-200 text-stone-600 rounded-2xl font-black uppercase text-[10px] hover:bg-stone-300">Guardar Borrador</button>
+                <button onclick="guardarTaller('published')" id="btnPublicar" class="flex-[2] py-4 bg-purple-900 text-white rounded-2xl font-black shadow-xl uppercase text-[10px] active:scale-95 transition-transform">Publicar en Escuela</button>
             </div>
+
         </section>
 
         <section class="space-y-4">
@@ -142,6 +172,88 @@
 
     let listaEstudiantesGlobal = [];
 
+    // LÓGICA VISTA PREVIA (SIMULADOR CELULAR)
+    function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
+
+    function abrirVistaPrevia() {
+        const titulo = document.getElementById('tituloTaller').value || "TÍTULO DE LA ACTIVIDAD";
+        const texto = document.getElementById('textoLectura').value;
+        const imgUrl = document.getElementById('imagenTaller').value.trim();
+        const vidUrl = document.getElementById('videoTaller').value.trim();
+        const tipo = document.getElementById('tipoActividad').value || "TALLER";
+        const area = document.getElementById('areaConocimiento').value || "ÁREA";
+        
+        let contenidoHtml = `<div style="text-align:center; margin-bottom:15px;"><span style="font-size:10px; font-weight:900; background:#475569; color:#fff; padding:5px 10px; border-radius:8px; text-transform:uppercase;">📚 ${area} | ${tipo}</span></div>`;
+        contenidoHtml += `<div style="font-weight:900; color:#1b5e20; text-align:center; margin-bottom:15px; font-size:18px;">${titulo}</div>`;
+
+        let mediaTextHtml = "";
+        if(vidUrl) {
+            const vidId = getYouTubeId(vidUrl);
+            if(vidId) mediaTextHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${vidId}" allowfullscreen></iframe></div>`;
+        }
+        if(imgUrl) {
+            mediaTextHtml += `<img src="${imgUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`;
+        }
+        if(texto) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerText = texto;
+            mediaTextHtml += `<div style="white-space: pre-line;">${tempDiv.innerHTML}</div>`;
+        }
+        
+        if(mediaTextHtml) {
+            contenidoHtml += `<div class="lectura-texto">${mediaTextHtml}</div>`;
+        }
+
+        const divs = document.querySelectorAll('[id^="pregunta-"]');
+        let qIndex = 0;
+        divs.forEach(div => {
+            const t = div.dataset.tipo;
+            const pText = div.querySelector('.q-text').value || "Enunciado de la pregunta...";
+            
+            let qHtml = `<div class="pregunta-card"><div style="font-weight:800; font-size:14px; margin-bottom:10px; color:#1e293b;">${qIndex+1}. ${pText}</div>`;
+            
+            if(t === 'multiple') {
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> A) ${div.querySelector('.opt-a').value || 'Opción A'}</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> B) ${div.querySelector('.opt-b').value || 'Opción B'}</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> C) ${div.querySelector('.opt-c').value || 'Opción C'}</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> D) ${div.querySelector('.opt-d').value || 'Opción D'}</label>`;
+            } else if(t === 'verdadero_falso') {
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Verdadero</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Falso</label>`;
+            } else if(t === 'completacion') {
+                const textoComp = div.querySelector('.comp-texto').value || "Ejemplo: El color del cielo es ___";
+                let textoInLine = textoComp.replace(/_{2,}/g, `<input type="text" disabled placeholder="..." style="width: 70px; padding: 2px 5px; margin: 0 4px; border: none; border-bottom: 2px solid #1b5e20; background: #e8f5e9; text-align: center; font-weight: bold; outline: none; color: #1b5e20; border-radius: 4px 4px 0 0;">`);
+                qHtml += `<div style="background:#fff; padding:15px; border-radius:10px; font-size:15px; line-height:2.2; margin-bottom:12px; border:1px dashed #cbd5e1; color:#1e293b;">${textoInLine}</div>`;
+                qHtml += `<button type="button" class="preview-btn">COMPROBAR RESPUESTA</button>`;
+            } else if(t === 'ahorcado') {
+                const palabraOculta = div.querySelector('.ahorcado-palabra').value || "PALABRA";
+                let chars = palabraOculta.split('');
+                let boxes = chars.map(c => c === ' ' ? '<div style="width:15px; display:inline-block;"></div>' : `<div style="display:inline-block; width:20px; border-bottom:3px solid #1e293b; margin:0 3px; height:25px;"></div>`).join('');
+                qHtml += `<div style="text-align:center; margin:15px 0;">${boxes}</div>`;
+                const pistas = div.querySelector('.ahorcado-pistas').value;
+                if (pistas) qHtml += `<div style="text-align:center; font-size:11px; color:#ef4444; font-weight:900; margin-bottom:10px; text-transform:uppercase;">💡 PISTAS: ${pistas}</div>`;
+                qHtml += `<input type="text" disabled placeholder="Escribe la palabra oculta..." style="width:100%; padding:14px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:14px; text-align:center; text-transform:uppercase; font-weight:bold; background:#f9f9f9;">`;
+                qHtml += `<button type="button" class="preview-btn" style="margin-top:10px;">COMPROBAR RESPUESTA</button>`;
+            } else {
+                qHtml += `<textarea disabled placeholder="Escribe aquí tu respuesta de forma clara y con buena ortografía..." rows="4" style="width:100%; border:1.5px solid #cbd5e1; border-radius:12px; padding:12px; font-family:inherit; font-size:14px; background:#f9f9f9;"></textarea>`;
+            }
+            qHtml += `</div>`;
+            contenidoHtml += qHtml;
+            qIndex++;
+        });
+
+        contenidoHtml += `<button disabled class="preview-btn" style="margin-bottom:30px;">ENVIAR RESPUESTAS AL PROFESOR</button>`;
+
+        document.getElementById('preview-body').innerHTML = contenidoHtml;
+        document.getElementById('modal-preview').style.display = 'flex';
+    }
+
+    function cerrarVistaPrevia() {
+        document.getElementById('modal-preview').style.display = 'none';
+    }
+
+    // ------------------------------------
+
     function switchTab(tab) {
         document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
         document.getElementById('view-resultados').classList.toggle('hidden', tab !== 'resultados');
@@ -161,7 +273,6 @@
         }
     }
 
-    // Funciones para reordenar preguntas
     function moverPreguntaArriba(btn) {
         const div = btn.closest('div[id^="pregunta-"]');
         if (div.previousElementSibling) div.parentNode.insertBefore(div, div.previousElementSibling);
