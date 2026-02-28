@@ -28,7 +28,6 @@
     .badge-grado { cursor: pointer; transition: 0.2s; }
     .badge-grado.selected { background-color: #6b21a8; color: white; border-color: #6b21a8; }
 
-    /* --- ESTILOS VISTA PREVIA (SIMULADOR CELULAR) --- */
     #modal-preview { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
     .preview-device { background: #dff5e1; width: 100%; max-width: 380px; height: 90vh; border-radius: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; position: relative; border: 8px solid #333; }
     .preview-header { background: #1b5e20; color: #fff; padding: 15px; text-align: center; font-weight: 800; font-size: 12px; text-transform: uppercase; border-radius: 0 0 25px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; font-family: system-ui, sans-serif; letter-spacing: 1px;}
@@ -39,8 +38,6 @@
     .preview-content .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; overflow: hidden; border-radius: 12px; margin-bottom: 15px; background: #000; }
     .preview-content .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
     .preview-btn { width: 100%; padding: 15px; background: #0277bd; color: #fff; font-weight: 800; border: none; border-radius: 14px; font-size: 15px; box-shadow: 0 4px 0 #01579b; margin-top: 5px; opacity: 0.6; cursor: not-allowed;}
-    /* ------------------------------------------------ */
-
   </style>
 </head>
 <body class="p-4 pb-20">
@@ -110,12 +107,13 @@
 
             <div id="contenedorPreguntas" class="space-y-6 border-t pt-4 flex flex-col"></div>
 
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-2">
                 <button onclick="agregarPregunta('multiple')" class="py-3 bg-purple-50 text-purple-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-purple-200 hover:bg-purple-100">+ Múltiple</button>
                 <button onclick="agregarPregunta('verdadero_falso')" class="py-3 bg-green-50 text-green-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-green-200 hover:bg-green-100">+ V / F</button>
                 <button onclick="agregarPregunta('abierta')" class="py-3 bg-blue-50 text-blue-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-blue-200 hover:bg-blue-100">+ Abierta</button>
                 <button onclick="agregarPregunta('completacion')" class="py-3 bg-yellow-50 text-yellow-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-yellow-200 hover:bg-yellow-100">+ Completar</button>
                 <button onclick="agregarPregunta('ahorcado')" class="py-3 bg-red-50 text-red-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-red-200 hover:bg-red-100">+ Ahorcado</button>
+                <button onclick="agregarPregunta('pareados')" class="py-3 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase border-2 border-dashed border-indigo-200 hover:bg-indigo-100">+ Pareados</button>
             </div>
 
             <div class="flex gap-2 pt-4 border-t">
@@ -172,7 +170,6 @@
 
     let listaEstudiantesGlobal = [];
 
-    // LÓGICA VISTA PREVIA (SIMULADOR CELULAR)
     function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
 
     function abrirVistaPrevia() {
@@ -234,6 +231,19 @@
                 if (pistas) qHtml += `<div style="text-align:center; font-size:11px; color:#ef4444; font-weight:900; margin-bottom:10px; text-transform:uppercase;">💡 PISTAS: ${pistas}</div>`;
                 qHtml += `<input type="text" disabled placeholder="Escribe la palabra oculta..." style="width:100%; padding:14px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:14px; text-align:center; text-transform:uppercase; font-weight:bold; background:#f9f9f9;">`;
                 qHtml += `<button type="button" class="preview-btn" style="margin-top:10px;">COMPROBAR RESPUESTA</button>`;
+            } else if(t === 'pareados') {
+                qHtml += `<div style="font-size:12px; color:#475569; margin-bottom:12px; font-weight:bold;">Selecciona la pareja correcta para cada elemento:</div>`;
+                for(let i=0; i<4; i++) {
+                    const izq = div.querySelector(`.par-izq-${i}`).value.trim();
+                    const der = div.querySelector(`.par-der-${i}`).value.trim();
+                    if(izq && der) {
+                        qHtml += `
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <div style="flex:1; background:#e2e8f0; padding:10px; border-radius:10px; font-size:13px; font-weight:700; color:#1e293b;">${izq}</div>
+                            <select disabled style="flex:1; padding:10px; border-radius:10px; border:1.5px solid #cbd5e1; font-size:12px; background:#f9f9f9;"><option>${der}</option></select>
+                        </div>`;
+                    }
+                }
             } else {
                 qHtml += `<textarea disabled placeholder="Escribe aquí tu respuesta de forma clara y con buena ortografía..." rows="4" style="width:100%; border:1.5px solid #cbd5e1; border-radius:12px; padding:12px; font-family:inherit; font-size:14px; background:#f9f9f9;"></textarea>`;
             }
@@ -251,8 +261,6 @@
     function cerrarVistaPrevia() {
         document.getElementById('modal-preview').style.display = 'none';
     }
-
-    // ------------------------------------
 
     function switchTab(tab) {
         document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
@@ -292,6 +300,7 @@
       else if(tipo === 'abierta') bgClass = 'border-blue-100 bg-blue-50/30';
       else if(tipo === 'completacion') bgClass = 'border-yellow-100 bg-yellow-50/30';
       else if(tipo === 'ahorcado') bgClass = 'border-red-100 bg-red-50/30';
+      else if(tipo === 'pareados') bgClass = 'border-indigo-100 bg-indigo-50/30';
       else bgClass = 'border-green-100 bg-green-50/30';
 
       div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${bgClass}`;
@@ -325,6 +334,14 @@
             <input type="text" value="${data?data.palabraOculta||'':''}" placeholder="Palabra o frase a descubrir..." class="w-full text-[11px] font-bold ahorcado-palabra">
             <input type="text" value="${data?data.pistas||'':''}" placeholder="Letras pista iniciales separadas por coma (Opcional)" class="w-full text-[11px] ahorcado-pistas">
         </div>`;
+      } else if (tipo === 'pareados') {
+        html += `<div class="space-y-2">
+            <p class="text-[10px] font-black text-stone-500 uppercase mt-2">Pares (Concepto - Respuesta correcta):</p>
+            <div class="flex gap-2"><input type="text" value="${data&&data.pares&&data.pares[0]?data.pares[0].izq:''}" placeholder="Concepto 1" class="w-1/2 text-[11px] par-izq-0 bg-stone-50"><input type="text" value="${data&&data.pares&&data.pares[0]?data.pares[0].der:''}" placeholder="Respuesta 1" class="w-1/2 text-[11px] par-der-0 bg-stone-50"></div>
+            <div class="flex gap-2"><input type="text" value="${data&&data.pares&&data.pares[1]?data.pares[1].izq:''}" placeholder="Concepto 2" class="w-1/2 text-[11px] par-izq-1 bg-stone-50"><input type="text" value="${data&&data.pares&&data.pares[1]?data.pares[1].der:''}" placeholder="Respuesta 2" class="w-1/2 text-[11px] par-der-1 bg-stone-50"></div>
+            <div class="flex gap-2"><input type="text" value="${data&&data.pares&&data.pares[2]?data.pares[2].izq:''}" placeholder="Concepto 3" class="w-1/2 text-[11px] par-izq-2 bg-stone-50"><input type="text" value="${data&&data.pares&&data.pares[2]?data.pares[2].der:''}" placeholder="Respuesta 3" class="w-1/2 text-[11px] par-der-2 bg-stone-50"></div>
+            <div class="flex gap-2"><input type="text" value="${data&&data.pares&&data.pares[3]?data.pares[3].izq:''}" placeholder="Concepto 4" class="w-1/2 text-[11px] par-izq-3 bg-stone-50"><input type="text" value="${data&&data.pares&&data.pares[3]?data.pares[3].der:''}" placeholder="Respuesta 4" class="w-1/2 text-[11px] par-der-3 bg-stone-50"></div>
+        </div>`;
       }
       div.innerHTML = html;
       document.getElementById('contenedorPreguntas').appendChild(div);
@@ -352,6 +369,15 @@
             else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='completacion') resps.push({tipo:t, pregunta:pText, textoConcepto:div.querySelector('.comp-texto').value, palabrasCorrectas:div.querySelector('.comp-respuestas').value});
             else if(t==='ahorcado') resps.push({tipo:t, pregunta:pText, palabraOculta:div.querySelector('.ahorcado-palabra').value, pistas:div.querySelector('.ahorcado-pistas').value});
+            else if(t==='pareados') {
+                let pares = [];
+                for(let i=0; i<4; i++) {
+                    const izq = div.querySelector(`.par-izq-${i}`).value.trim();
+                    const der = div.querySelector(`.par-der-${i}`).value.trim();
+                    if(izq && der) pares.push({izq, der});
+                }
+                resps.push({tipo:t, pregunta:pText, pares});
+            }
             else resps.push({tipo:t, pregunta:pText});
         });
 
@@ -602,6 +628,7 @@
                 let icono = r.esCorrecta ? '✅' : '❌';
                 if (r.tipo === 'abierta' || r.tipo === 'completacion') icono = '📝';
                 if (r.tipo === 'ahorcado') icono = '🎮';
+                if (r.tipo === 'pareado_item') icono = '🧩';
                 return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`;
             }).join("");
             
