@@ -104,7 +104,7 @@
                 <select id="areaConocimiento" class="w-full text-xs font-bold bg-stone-50"><option value="">Área...</option><option>ESPAÑOL (LENGUAJE)</option><option>MATEMATICAS</option><option>CIENCIAS NATURALES</option><option>CIENCIAS SOCIALES</option><option>INGLES</option><option>ARTISTICA</option><option>EDUCACION FISICA</option><option>ETICA Y VALORES</option><option>RELIGION</option><option>TECNOLOGIA E INFORMATICA</option></select>
             </div>
 
-            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí (Opcional si usas imagen/video)..." class="w-full text-sm font-medium mt-2"></textarea>
+            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí (Opcional si usas imagen/video/documento)..." class="w-full text-sm font-medium mt-2"></textarea>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                 <div class="flex gap-2">
@@ -114,7 +114,11 @@
                         <input type="file" id="fileImagenTaller" accept="image/*" class="hidden" onchange="convertirImagenABase64(event)">
                     </label>
                 </div>
-                <input type="url" id="videoTaller" placeholder="URL de Video YouTube (Opcional)" class="w-full text-xs font-bold">
+                <input type="url" id="videoTaller" placeholder="URL de YouTube o TikTok (Opcional)" class="w-full text-xs font-bold">
+            </div>
+            
+            <div class="mt-2">
+                <input type="url" id="docTaller" placeholder="URL de Documento (Drive o PDF externo) para leer aquí mismo (Opcional)" class="w-full text-xs font-bold bg-stone-50">
             </div>
 
             <div id="contenedorPreguntas" class="space-y-6 border-t pt-4 flex flex-col"></div>
@@ -198,13 +202,17 @@
         reader.readAsDataURL(file);
     }
 
+    // EXTRAER IDS DE MULTIMEDIA
     function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
+    function getTikTokId(url) { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; }
+    function getDriveId(url) { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; }
 
     function abrirVistaPrevia() {
         const titulo = document.getElementById('tituloTaller').value || "TÍTULO DE LA ACTIVIDAD";
         const texto = document.getElementById('textoLectura').value;
         const imgUrl = document.getElementById('imagenTaller').value.trim();
         const vidUrl = document.getElementById('videoTaller').value.trim();
+        const docUrl = document.getElementById('docTaller').value.trim();
         const tipo = document.getElementById('tipoActividad').value || "TALLER";
         const area = document.getElementById('areaConocimiento').value || "ÁREA";
         const permiteProgreso = document.getElementById('permitirProgreso').checked;
@@ -213,13 +221,34 @@
         contenidoHtml += `<div style="font-weight:900; color:#1b5e20; text-align:center; margin-bottom:15px; font-size:18px;">${titulo}</div>`;
 
         let mediaTextHtml = "";
+        
+        // PROCESAMIENTO DE VIDEO (YOUTUBE O TIKTOK 9x16)
         if(vidUrl) {
-            const vidId = getYouTubeId(vidUrl);
-            if(vidId) mediaTextHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${vidId}" allowfullscreen></iframe></div>`;
+            const ytId = getYouTubeId(vidUrl);
+            const tkId = getTikTokId(vidUrl);
+            if(ytId) {
+                mediaTextHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`;
+            } else if(tkId) {
+                mediaTextHtml += `<div style="position: relative; width: 100%; aspect-ratio: 9/16; border-radius: 12px; margin-bottom: 15px; overflow: hidden; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><iframe src="https://www.tiktok.com/embed/v2/${tkId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen></iframe></div>`;
+            }
         }
+        
         if(imgUrl) {
             mediaTextHtml += `<img src="${imgUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`;
         }
+        
+        // PROCESAMIENTO DE VISOR DE DOCUMENTOS
+        if(docUrl) {
+            const driveId = getDriveId(docUrl);
+            let embedUrl = "";
+            if(driveId) {
+                embedUrl = `https://drive.google.com/file/d/${driveId}/preview`;
+            } else {
+                embedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(docUrl)}&embedded=true`;
+            }
+            mediaTextHtml += `<div style="width: 100%; height: 400px; border-radius: 12px; margin-bottom: 15px; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"><iframe src="${embedUrl}" style="width: 100%; height: 100%; border: 0;"></iframe></div>`;
+        }
+
         if(texto) {
             const tempDiv = document.createElement('div');
             tempDiv.innerText = texto;
@@ -389,6 +418,7 @@
         const area = document.getElementById('areaConocimiento').value;
         const imgUrl = document.getElementById('imagenTaller').value.trim();
         const vidUrl = document.getElementById('videoTaller').value.trim();
+        const docUrl = document.getElementById('docTaller').value.trim();
         const permitirProgreso = document.getElementById('permitirProgreso').checked;
         
         const estudianteEsp = document.getElementById('estudianteEspecifico').value.trim();
@@ -419,13 +449,13 @@
         if(!tieneDestinoValido || !titulo || !tipo || !area || !fechaVencimiento) {
              return alert("Completa todos los campos principales. Selecciona un grado o un estudiante específico, además de Fecha de Cierre, Tipo y Área.");
         }
-        if(!texto && !imgUrl && !vidUrl) return alert("Debes incluir un texto, una imagen o un video.");
+        if(!texto && !imgUrl && !vidUrl && !docUrl) return alert("Debes incluir un texto, una imagen, un video o un documento adjunto.");
 
         document.getElementById('btnPublicar').disabled = true;
         document.getElementById('btnBorrador').disabled = true;
 
         const tallerData = { 
-            titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, 
+            titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, docUrl: docUrl,
             gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, 
             fechaPublicacion: fechaPublicacion, fechaVencimiento: fechaVencimiento,
             estudianteEspecifico: estudianteEsp, permitirProgreso: permitirProgreso,
@@ -563,7 +593,6 @@
 
             let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
             
-            // INYECCIÓN MATEMÁTICA PARA MOSTRAR FECHA EXACTA DE PROGRAMACIÓN
             let badgeProgramado = '';
             if (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) {
                 const fPub = new Date(t.fechaPublicacion);
@@ -604,6 +633,7 @@
         document.getElementById('textoLectura').value = t.contenido;
         document.getElementById('imagenTaller').value = t.imageUrl || '';
         document.getElementById('videoTaller').value = t.videoUrl || '';
+        document.getElementById('docTaller').value = t.docUrl || '';
         document.getElementById('tipoActividad').value = t.tipoActividad;
         document.getElementById('areaConocimiento').value = t.areaConocimiento;
         document.getElementById('permitirProgreso').checked = t.permitirProgreso || false;
