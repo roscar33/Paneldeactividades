@@ -562,14 +562,22 @@
             if(matchEst) nombreEstudiante = matchEst.nombre;
 
             let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
-            let badgeProgramado = (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">⏳ PROGRAMADO</span>` : '';
+            
+            // INYECCIÓN MATEMÁTICA PARA MOSTRAR FECHA EXACTA DE PROGRAMACIÓN
+            let badgeProgramado = '';
+            if (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) {
+                const fPub = new Date(t.fechaPublicacion);
+                const strPub = fPub.toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+                badgeProgramado = `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1 inline-block mt-1">⏳ PROGRAMADA PARA: ${strPub}</span>`;
+            }
 
             lista.innerHTML += `
               <div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}">
                 <div class="flex justify-between items-start mb-4">
                   <div class="flex-1 pr-2">
                       <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.length ? t.gradoDestino.join(', ') : 'Privado'}</span>
-                      ${badgeEstudiante}${badgeProgramado}
+                      ${badgeEstudiante}
+                      <br>${badgeProgramado}
                       <h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3>
                       <p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p>
                   </div>
