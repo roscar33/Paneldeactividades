@@ -784,23 +784,76 @@
         const inputVal = document.getElementById(`nota-${docId}`).value;
         const notaDefinitiva = parseFloat(inputVal.replace(',', '.'));
         if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa una nota válida entre 0 y 5.0"); }
-        await db.collection("resultadosTalleres").doc(docId).update({ nota: notaDefinitiva, requiereRevision: false });
-    }
+        
+        // Mostrar cargando para no interrumpir el proceso
+        Swal.fire({title: 'Guardando nota y otorgando XP...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
-    async function habilitarReintento(docId) {
-        if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) {
-            await db.collection("resultadosTalleres").doc(docId).delete();
-            Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success');
-        }
-    }
+        const resRef = db.collection("resultadosTalleres").doc(docId);
+        const resSnap = await resRef.get();
+        
+        if (resSnap.exists) {
+            const data = resSnap.data();
+            const batch = db.batch();
+            batch.update(resRef, { nota: notaDefinitiva, requiereRevision: false });
+            
+            // 🟢 Lógica de XP Diferido
+            let xpToAward = 50; 
+            if (notaDefinitiva >= 4.0) xpToAward += 20;
+            
+            // Buscar el área original del taller para ver si se ganó la Escarapela por sacar 5.0
+            let nuevosLogros = [];
+            if (notaDefinitiva === 5.0) {
+                const tallerSnap = await db.collection("talleresLectura").doc(data.idTaller).get();
+                if(tallerSnap.exists) {
+                    const ac = (tallerSnap.data().areaConocimiento || "").toUpperCase();
+                    let codigoLogro = "perfecto_gral";
+                    if (ac.includes("MATEMATICAS")) codigoLogro = "matematicas_5";
+                    else if (ac.includes("ESPAÑOL") || ac.includes("LENGUAJE")) codigoLogro = "espanol_5";
+                    else if (ac.includes("NATURALES")) codigoLogro = "naturales_5";
+                    else if (ac.includes("SOCIALES")) codigoLogro = "sociales_5";
+                    else if (ac.includes("INGLES")) codigoLogro = "ingles_5";
+                    
+                    nuevosLogros.push(codigoLogro);
+                    xpToAward += 100; // +100 por la escarapela
+                }
+            }
 
-    async function toggleArchivarResultado(id, isArchiving) {
-        await db.collection("resultadosTalleres").doc(id).update({ archived: isArchiving });
-    }
+            // Sumarle los XP a su base de datos
+            const logRef = db.collection("logrosEstudiantes").doc(data.documentoEstudiante);
+            const updateLogData = {
+                xp: firebase.firestore.FieldValue.increment(xpToAward),
+                documentoEstudiante: data.documentoEstudiante,
+                nombreEstudiante: data.nombreEstudiante
+            };
+            if(nuevosLogros.length > 0) {
+                updateLogData.logros = firebase.firestore.FieldValue.arrayUnion(...nuevosLogros);
+            }
+            batch.set(logRef, updateLogData, { merge: true });
 
-    async function eliminarResultadoDefinitivo(id) {
-        if((await Swal.fire({title:'¿Eliminar Resultado?', text:'Esta acción borrará la nota permanentemente de la base de datos.', icon:'error', showCancelButton:true, confirmButtonText: 'Sí, eliminar', confirmButtonColor:'#d33'})).isConfirmed) { 
-            await db.collection("resultadosTalleres").doc(id).delete(); 
+            // Registrar en su historial
+            const histRef = db.collection("historialXP").doc();
+            batch.set(histRef, {
+                documentoEstudiante: data.documentoEstudiante,
+                motivo: `Calificación final de Taller: ${data.tituloTaller}`,
+                cantidad: xpToAward,
+                timestamp: Date.now()
+            });
+
+            // Enviar notificación al estudiante
+            const expDate = new Date();
+            expDate.setHours(expDate.getHours() + 48); 
+            const noticeRef = db.collection("tableroAvisos").doc();
+            batch.set(noticeRef, {
+                mensaje: `✅ Taller Calificado: "${data.tituloTaller}".\nEl profe revisó tu respuesta escrita. Tu nota final es: ${notaDefinitiva}\n¡Has ganado +${xpToAward} XP!`,
+                color: 'green', imageUrl: '', videoUrl: '', docUrl: '',
+                scope: 'Individual', targetGrades: [], targetStudentDoc: data.documentoEstudiante,
+                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: true,
+                publishAt: new Date().toISOString(), expiresAt: expDate.toISOString()
+            });
+
+            await batch.commit();
+            Swal.fire({icon: 'success', title: '¡Calificado!', text: `Nota guardada y ${xpToAward} XP otorgados al estudiante.`, timer: 2000, showConfirmButton: false});
         }
     }
 
