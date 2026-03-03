@@ -191,7 +191,6 @@
 
     let listaEstudiantesGlobal = [];
 
-    // LÓGICA DE IMAGEN BASE64
     function convertirImagenABase64(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -202,7 +201,6 @@
         reader.readAsDataURL(file);
     }
 
-    // EXTRAER IDS DE MULTIMEDIA
     function getYouTubeId(url) { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; }
     function getTikTokId(url) { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; }
     function getDriveId(url) { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; }
@@ -222,7 +220,6 @@
 
         let mediaTextHtml = "";
         
-        // PROCESAMIENTO DE VIDEO (YOUTUBE O TIKTOK 9x16)
         if(vidUrl) {
             const ytId = getYouTubeId(vidUrl);
             const tkId = getTikTokId(vidUrl);
@@ -237,7 +234,6 @@
             mediaTextHtml += `<img src="${imgUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`;
         }
         
-        // PROCESAMIENTO DE VISOR DE DOCUMENTOS
         if(docUrl) {
             const driveId = getDriveId(docUrl);
             let embedUrl = "";
@@ -353,7 +349,6 @@
         if (div.nextElementSibling) div.parentNode.insertBefore(div.nextElementSibling, div);
     }
     
-    // Función para agregar filas dinámicas a "Pareados"
     window.agregarFilaPareado = function(btn) {
         const lista = btn.previousElementSibling;
         const count = lista.querySelectorAll('.pareado-row').length + 1;
@@ -506,11 +501,17 @@
             const fVencObj = new Date(fechaVencimiento);
             const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
             let msgPrivado = estudianteEsp ? `\n👤 Asignación Privada` : '';
+            
+            const pubDate = fechaPublicacion ? new Date(fechaPublicacion) : new Date();
+            const expDate = new Date(pubDate);
+            expDate.setHours(expDate.getHours() + 24);
+
             await db.collection("tableroAvisos").add({
                 mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`,
                 color: 'purple', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
                 targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null,
-                publishAt: fechaPublicacion ? fechaPublicacion : null,
+                publishAt: pubDate.toISOString(),
+                expiresAt: expDate.toISOString(),
                 timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
             });
         }
@@ -546,12 +547,17 @@
             swalOptions += `<option value="${est.documento}" ${isSelected}>${est.nombre} - ${est.grado}</option>`;
         });
 
+        let fechaFormat = t.fechaVencimiento || '';
+        if(fechaFormat.length > 16) {
+            fechaFormat = fechaFormat.substring(0, 16);
+        }
+
         const { value: formValues } = await Swal.fire({
             title: 'Reabrir / Extender / Reintento',
             html:
                 `<div class="text-left space-y-3">
                     <label class="text-xs font-bold text-stone-600 block">Nueva Fecha de Cierre:</label>
-                    <input id="swal-fecha" type="datetime-local" class="swal2-input !w-[90%] !text-sm !m-0" value="${t.fechaVencimiento || ''}">
+                    <input id="swal-fecha" type="datetime-local" class="swal2-input !w-[90%] !text-sm !m-0" value="${fechaFormat}">
                     <label class="text-xs font-bold text-stone-600 block mt-4">Asignar a un estudiante (Borra el intento anterior si lo hay):</label>
                     <select id="swal-estudiante" class="swal2-select !w-[90%] !text-sm !m-0">
                         ${swalOptions}
@@ -562,7 +568,12 @@
             confirmButtonText: 'Actualizar y Habilitar',
             cancelButtonText: 'Cancelar',
             preConfirm: () => {
-                return [document.getElementById('swal-fecha').value, document.getElementById('swal-estudiante').value]
+                const f = document.getElementById('swal-fecha').value;
+                if (!f) {
+                    Swal.showValidationMessage('Debes seleccionar una fecha obligatoriamente.');
+                    return false;
+                }
+                return [f, document.getElementById('swal-estudiante').value];
             }
         });
 
@@ -570,28 +581,42 @@
             const nuevaFecha = formValues[0];
             const nuevoEstudianteDoc = formValues[1].trim();
             
-            if(!nuevaFecha) return alert("Debes seleccionar una fecha obligatoriamente.");
-            
-            await db.collection("talleresLectura").doc(id).update({
-                fechaVencimiento: nuevaFecha,
-                estudianteEspecifico: nuevoEstudianteDoc,
-                activo: true, 
-                archived: false, 
-                status: 'published'
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Habilitando actividad y limpiando intentos previos.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
             });
 
-            if (nuevoEstudianteDoc) {
-                const resultadosSnap = await db.collection("resultadosTalleres")
-                    .where("idTaller", "==", id)
-                    .where("documentoEstudiante", "==", nuevoEstudianteDoc)
-                    .get();
-                
-                resultadosSnap.forEach(async (doc) => {
-                    await db.collection("resultadosTalleres").doc(doc.id).delete();
+            try {
+                await db.collection("talleresLectura").doc(id).update({
+                    fechaVencimiento: nuevaFecha,
+                    estudianteEspecifico: nuevoEstudianteDoc,
+                    activo: true, 
+                    archived: false, 
+                    status: 'published'
                 });
-            }
 
-            Swal.fire('¡Habilitado!', 'La actividad ha sido reabierta y el intento anterior borrado (si existía).', 'success');
+                if (nuevoEstudianteDoc) {
+                    const resultadosSnap = await db.collection("resultadosTalleres")
+                        .where("idTaller", "==", id)
+                        .where("documentoEstudiante", "==", nuevoEstudianteDoc)
+                        .get();
+                    
+                    if (!resultadosSnap.empty) {
+                        const batch = db.batch();
+                        resultadosSnap.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        await batch.commit();
+                    }
+                }
+
+                Swal.fire('¡Habilitado!', 'La actividad ha sido reabierta.', 'success');
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', 'Hubo un problema de conexión. Intenta nuevamente.', 'error');
+            }
         }
     }
 
@@ -620,7 +645,6 @@
 
             let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
             
-            // INYECCIÓN MATEMÁTICA PARA MOSTRAR FECHA EXACTA DE PROGRAMACIÓN
             let badgeProgramado = '';
             if (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) {
                 const fPub = new Date(t.fechaPublicacion);
@@ -785,7 +809,6 @@
         const notaDefinitiva = parseFloat(inputVal.replace(',', '.'));
         if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa una nota válida entre 0 y 5.0"); }
         
-        // Mostrar cargando para no interrumpir el proceso
         Swal.fire({title: 'Guardando nota y otorgando XP...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
         const resRef = db.collection("resultadosTalleres").doc(docId);
@@ -796,11 +819,9 @@
             const batch = db.batch();
             batch.update(resRef, { nota: notaDefinitiva, requiereRevision: false });
             
-            // 🟢 Lógica de XP Diferido
             let xpToAward = 50; 
             if (notaDefinitiva >= 4.0) xpToAward += 20;
             
-            // Buscar el área original del taller para ver si se ganó la Escarapela por sacar 5.0
             let nuevosLogros = [];
             if (notaDefinitiva === 5.0) {
                 const tallerSnap = await db.collection("talleresLectura").doc(data.idTaller).get();
@@ -814,11 +835,10 @@
                     else if (ac.includes("INGLES")) codigoLogro = "ingles_5";
                     
                     nuevosLogros.push(codigoLogro);
-                    xpToAward += 100; // +100 por la escarapela
+                    xpToAward += 100;
                 }
             }
 
-            // Sumarle los XP a su base de datos
             const logRef = db.collection("logrosEstudiantes").doc(data.documentoEstudiante);
             const updateLogData = {
                 xp: firebase.firestore.FieldValue.increment(xpToAward),
@@ -830,7 +850,6 @@
             }
             batch.set(logRef, updateLogData, { merge: true });
 
-            // Registrar en su historial
             const histRef = db.collection("historialXP").doc();
             batch.set(histRef, {
                 documentoEstudiante: data.documentoEstudiante,
@@ -839,7 +858,6 @@
                 timestamp: Date.now()
             });
 
-            // Enviar notificación al estudiante
             const expDate = new Date();
             expDate.setHours(expDate.getHours() + 48); 
             const noticeRef = db.collection("tableroAvisos").doc();
@@ -854,6 +872,23 @@
 
             await batch.commit();
             Swal.fire({icon: 'success', title: '¡Calificado!', text: `Nota guardada y ${xpToAward} XP otorgados al estudiante.`, timer: 2000, showConfirmButton: false});
+        }
+    }
+
+    async function habilitarReintento(docId) {
+        if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) {
+            await db.collection("resultadosTalleres").doc(docId).delete();
+            Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success');
+        }
+    }
+
+    async function toggleArchivarResultado(id, isArchiving) {
+        await db.collection("resultadosTalleres").doc(id).update({ archived: isArchiving });
+    }
+
+    async function eliminarResultadoDefinitivo(id) {
+        if((await Swal.fire({title:'¿Eliminar Resultado?', text:'Esta acción borrará la nota permanentemente de la base de datos.', icon:'error', showCancelButton:true, confirmButtonText: 'Sí, eliminar', confirmButtonColor:'#d33'})).isConfirmed) { 
+            await db.collection("resultadosTalleres").doc(id).delete(); 
         }
     }
 
