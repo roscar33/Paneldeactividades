@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+here<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -508,7 +508,7 @@
 
             await db.collection("tableroAvisos").add({
                 mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`,
-                color: 'purple', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
+                color: 'blue', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
                 targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null,
                 publishAt: pubDate.toISOString(),
                 expiresAt: expDate.toISOString(),
