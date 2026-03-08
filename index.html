@@ -47,6 +47,14 @@
     .ql-toolbar { border-radius: 14px 14px 0 0 !important; border-color: #e7e5e4 !important; background: #f5f5f4; font-family: 'Plus Jakarta Sans', sans-serif; }
     .ql-container { border-radius: 0 0 14px 14px !important; border-color: #e7e5e4 !important; background: #ffffff; font-family: 'Lora', serif; font-size: 15px; height: 250px; }
     .ql-editor { min-height: 250px; }
+
+    /* --- NUEVO: RESPETAR FORMATOS DEL EDITOR DE TEXTO EN VISTA PREVIA --- */
+    .lectura-texto p { margin-bottom: 1.2em !important; }
+    .lectura-texto ul { list-style-type: disc !important; padding-left: 2em !important; margin-bottom: 1.2em !important; }
+    .lectura-texto ol { list-style-type: decimal !important; padding-left: 2em !important; margin-bottom: 1.2em !important; }
+    .lectura-texto h1, .lectura-texto h2, .lectura-texto h3 { margin-top: 1em !important; margin-bottom: 0.5em !important; font-weight: 900 !important; }
+    .lectura-texto strong { font-weight: 900 !important; }
+    .lectura-texto em { font-style: italic !important; }
   </style>
 </head>
 <body class="p-4 pb-20">
@@ -231,9 +239,7 @@
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('imagenTaller').value = e.target.result;
-        };
+        reader.onload = function(e) { document.getElementById('imagenTaller').value = e.target.result; };
         reader.readAsDataURL(file);
     }
 
@@ -257,210 +263,93 @@
         let mediaTextHtml = "";
         
         if(vidUrl) {
-            const ytId = getYouTubeId(vidUrl);
-            const tkId = getTikTokId(vidUrl);
-            if(ytId) {
-                mediaTextHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`;
-            } else if(tkId) {
-                mediaTextHtml += `<div style="position: relative; width: 100%; aspect-ratio: 9/16; border-radius: 12px; margin-bottom: 15px; overflow: hidden; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><iframe src="https://www.tiktok.com/embed/v2/${tkId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen></iframe></div>`;
-            }
+            const ytId = getYouTubeId(vidUrl); const tkId = getTikTokId(vidUrl);
+            if(ytId) { mediaTextHtml += `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`; } 
+            else if(tkId) { mediaTextHtml += `<div style="position: relative; width: 100%; aspect-ratio: 9/16; border-radius: 12px; margin-bottom: 15px; overflow: hidden; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><iframe src="https://www.tiktok.com/embed/v2/${tkId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen></iframe></div>`; }
         }
         
-        if(imgUrl) {
-            mediaTextHtml += `<img src="${imgUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`;
-        }
+        if(imgUrl) { mediaTextHtml += `<img src="${imgUrl}" style="width:100%; border-radius:12px; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">`; }
         
         if(docUrl) {
-            const driveId = getDriveId(docUrl);
-            let embedUrl = "";
-            if(driveId) {
-                embedUrl = `https://drive.google.com/file/d/${driveId}/preview`;
-            } else {
-                embedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(docUrl)}&embedded=true`;
-            }
+            const driveId = getDriveId(docUrl); let embedUrl = "";
+            if(driveId) { embedUrl = `https://drive.google.com/file/d/${driveId}/preview`; } else { embedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(docUrl)}&embedded=true`; }
             mediaTextHtml += `<div style="width: 100%; height: 400px; border-radius: 12px; margin-bottom: 15px; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"><iframe src="${embedUrl}" style="width: 100%; height: 100%; border: 0;"></iframe></div>`;
         }
 
-        if(texto && texto !== '<p><br></p>') {
-            mediaTextHtml += `<div style="white-space: normal; word-break: break-word;" class="ql-editor">${texto}</div>`;
-        }
-        
-        if(mediaTextHtml) {
-            contenidoHtml += `<div class="lectura-texto">${mediaTextHtml}</div>`;
-        }
+        if(texto && texto !== '<p><br></p>') { mediaTextHtml += `<div style="white-space: normal; word-break: break-word;" class="ql-editor">${texto}</div>`; }
+        if(mediaTextHtml) { contenidoHtml += `<div class="lectura-texto">${mediaTextHtml}</div>`; }
 
-        const divs = document.querySelectorAll('[id^="pregunta-"]');
-        let qIndex = 0;
+        const divs = document.querySelectorAll('[id^="pregunta-"]'); let qIndex = 0;
         divs.forEach(div => {
-            const t = div.dataset.tipo;
-            const pText = div.querySelector('.q-text').value || "Enunciado de la pregunta...";
-            
+            const t = div.dataset.tipo; const pText = div.querySelector('.q-text').value || "Enunciado de la pregunta...";
             let qHtml = `<div class="pregunta-card"><div style="font-weight:800; font-size:14px; margin-bottom:10px; color:#1e293b;">${qIndex+1}. ${pText}</div>`;
             
             if(t === 'multiple') {
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> A) ${div.querySelector('.opt-a').value || 'Opción A'}</label>`;
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> B) ${div.querySelector('.opt-b').value || 'Opción B'}</label>`;
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> C) ${div.querySelector('.opt-c').value || 'Opción C'}</label>`;
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> D) ${div.querySelector('.opt-d').value || 'Opción D'}</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> A) ${div.querySelector('.opt-a').value || 'Opción A'}</label><label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> B) ${div.querySelector('.opt-b').value || 'Opción B'}</label><label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> C) ${div.querySelector('.opt-c').value || 'Opción C'}</label><label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> D) ${div.querySelector('.opt-d').value || 'Opción D'}</label>`;
             } else if(t === 'verdadero_falso') {
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Verdadero</label>`;
-                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Falso</label>`;
+                qHtml += `<label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Verdadero</label><label class="opcion-label"><input type="radio" disabled name="pv${qIndex}" style="margin-right:8px;"> Falso</label>`;
             } else if(t === 'completacion') {
                 const textoComp = div.querySelector('.comp-texto').value || "Ejemplo: El color del cielo es ___";
                 let textoInLine = textoComp.replace(/_{2,}/g, `<input type="text" disabled placeholder="..." style="width: 70px; padding: 2px 5px; margin: 0 4px; border: none; border-bottom: 2px solid #1b5e20; background: #e8f5e9; text-align: center; font-weight: bold; outline: none; color: #1b5e20; border-radius: 4px 4px 0 0;">`);
-                qHtml += `<div style="background:#fff; padding:15px; border-radius:10px; font-size:15px; line-height:2.2; margin-bottom:12px; border:1px dashed #cbd5e1; color:#1e293b;">${textoInLine}</div>`;
-                qHtml += `<button type="button" class="preview-btn">COMPROBAR RESPUESTA</button>`;
+                qHtml += `<div style="background:#fff; padding:15px; border-radius:10px; font-size:15px; line-height:2.2; margin-bottom:12px; border:1px dashed #cbd5e1; color:#1e293b;">${textoInLine}</div><button type="button" class="preview-btn">COMPROBAR RESPUESTA</button>`;
             } else if(t === 'ahorcado') {
-                const palabraOculta = div.querySelector('.ahorcado-palabra').value || "PALABRA";
-                let chars = palabraOculta.split('');
-                let boxes = chars.map(c => c === ' ' ? '<div style="width:15px; display:inline-block;"></div>' : `<div style="display:inline-block; width:20px; border-bottom:3px solid #1e293b; margin:0 3px; height:25px;"></div>`).join('');
-                qHtml += `<div style="text-align:center; margin:15px 0;">${boxes}</div>`;
-                const pistas = div.querySelector('.ahorcado-pistas').value;
+                const palabraOculta = div.querySelector('.ahorcado-palabra').value || "PALABRA"; let chars = palabraOculta.split(''); let boxes = chars.map(c => c === ' ' ? '<div style="width:15px; display:inline-block;"></div>' : `<div style="display:inline-block; width:20px; border-bottom:3px solid #1e293b; margin:0 3px; height:25px;"></div>`).join('');
+                qHtml += `<div style="text-align:center; margin:15px 0;">${boxes}</div>`; const pistas = div.querySelector('.ahorcado-pistas').value;
                 if (pistas) qHtml += `<div style="text-align:center; font-size:11px; color:#ef4444; font-weight:900; margin-bottom:10px; text-transform:uppercase;">💡 PISTAS: ${pistas}</div>`;
-                qHtml += `<input type="text" disabled placeholder="Escribe la palabra oculta..." style="width:100%; padding:14px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:14px; text-align:center; text-transform:uppercase; font-weight:bold; background:#f9f9f9;">`;
-                qHtml += `<button type="button" class="preview-btn" style="margin-top:10px;">COMPROBAR RESPUESTA</button>`;
+                qHtml += `<input type="text" disabled placeholder="Escribe la palabra oculta..." style="width:100%; padding:14px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:14px; text-align:center; text-transform:uppercase; font-weight:bold; background:#f9f9f9;"><button type="button" class="preview-btn" style="margin-top:10px;">COMPROBAR RESPUESTA</button>`;
             } else if(t === 'pareados') {
-                qHtml += `<div style="font-size:12px; color:#475569; margin-bottom:12px; font-weight:bold;">Selecciona la pareja correcta para cada elemento:</div>`;
-                const rows = div.querySelectorAll('.pareado-row');
-                rows.forEach(row => {
-                    const izq = row.querySelector('.par-izq').value.trim();
-                    const der = row.querySelector('.par-der').value.trim();
-                    if(izq && der) {
-                        qHtml += `
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                            <div style="flex:1; background:#e2e8f0; padding:10px; border-radius:10px; font-size:13px; font-weight:700; color:#1e293b;">${izq}</div>
-                            <select disabled style="flex:1; padding:10px; border-radius:10px; border:1.5px solid #cbd5e1; font-size:12px; background:#f9f9f9;"><option>${der}</option></select>
-                        </div>`;
-                    }
-                });
+                qHtml += `<div style="font-size:12px; color:#475569; margin-bottom:12px; font-weight:bold;">Selecciona la pareja correcta para cada elemento:</div>`; const rows = div.querySelectorAll('.pareado-row');
+                rows.forEach(row => { const izq = row.querySelector('.par-izq').value.trim(); const der = row.querySelector('.par-der').value.trim(); if(izq && der) { qHtml += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div style="flex:1; background:#e2e8f0; padding:10px; border-radius:10px; font-size:13px; font-weight:700; color:#1e293b;">${izq}</div><select disabled style="flex:1; padding:10px; border-radius:10px; border:1.5px solid #cbd5e1; font-size:12px; background:#f9f9f9;"><option>${der}</option></select></div>`; } });
             } else {
                 qHtml += `<textarea disabled placeholder="Escribe aquí tu respuesta de forma clara y con buena ortografía..." rows="4" style="width:100%; border:1.5px solid #cbd5e1; border-radius:12px; padding:12px; font-family:inherit; font-size:14px; background:#f9f9f9;"></textarea>`;
             }
-            qHtml += `</div>`;
-            contenidoHtml += qHtml;
-            qIndex++;
+            qHtml += `</div>`; contenidoHtml += qHtml; qIndex++;
         });
 
-        if (permiteProgreso) {
-            contenidoHtml += `<button disabled class="preview-btn" style="background:#f57c00; margin-bottom:10px;">💾 GUARDAR PROGRESO</button>`;
-        }
+        if (permiteProgreso) { contenidoHtml += `<button disabled class="preview-btn" style="background:#f57c00; margin-bottom:10px;">💾 GUARDAR PROGRESO</button>`; }
         contenidoHtml += `<button disabled class="preview-btn" style="margin-bottom:30px;">ENVIAR RESPUESTAS AL PROFESOR</button>`;
-
-        document.getElementById('preview-body').innerHTML = contenidoHtml;
-        document.getElementById('modal-preview').style.display = 'flex';
+        document.getElementById('preview-body').innerHTML = contenidoHtml; document.getElementById('modal-preview').style.display = 'flex';
     }
 
-    function cerrarVistaPrevia() {
-        document.getElementById('modal-preview').style.display = 'none';
-    }
+    function cerrarVistaPrevia() { document.getElementById('modal-preview').style.display = 'none'; }
 
     function switchTab(tab) {
-        document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor');
-        document.getElementById('view-resultados').classList.toggle('hidden', tab !== 'resultados');
+        document.getElementById('view-editor').classList.toggle('hidden', tab !== 'editor'); document.getElementById('view-resultados').classList.toggle('hidden', tab !== 'resultados');
         document.getElementById('tab-editor').className = tab === 'editor' ? 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm' : 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive';
         document.getElementById('tab-resultados').className = tab === 'resultados' ? 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-active shadow-sm' : 'flex-1 py-2.5 text-[10px] uppercase rounded-xl btn-tab-inactive';
         if(tab === 'resultados') cargarResultados();
     }
 
     function toggleGradoSel(btn, isTodos = false) {
-        if(isTodos) {
-            document.querySelectorAll('.badge-grado').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-        } else {
-            const btnTodos = document.querySelector('.badge-grado[value="Todos"]');
-            if(btnTodos) btnTodos.classList.remove('selected');
-            btn.classList.toggle('selected');
-        }
+        if(isTodos) { document.querySelectorAll('.badge-grado').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); } 
+        else { const btnTodos = document.querySelector('.badge-grado[value="Todos"]'); if(btnTodos) btnTodos.classList.remove('selected'); btn.classList.toggle('selected'); }
     }
 
-    function moverPreguntaArriba(btn) {
-        const div = btn.closest('div[id^="pregunta-"]');
-        if (div.previousElementSibling) div.parentNode.insertBefore(div, div.previousElementSibling);
-    }
-
-    function moverPreguntaAbajo(btn) {
-        const div = btn.closest('div[id^="pregunta-"]');
-        if (div.nextElementSibling) div.parentNode.insertBefore(div.nextElementSibling, div);
-    }
+    function moverPreguntaArriba(btn) { const div = btn.closest('div[id^="pregunta-"]'); if (div.previousElementSibling) div.parentNode.insertBefore(div, div.previousElementSibling); }
+    function moverPreguntaAbajo(btn) { const div = btn.closest('div[id^="pregunta-"]'); if (div.nextElementSibling) div.parentNode.insertBefore(div.nextElementSibling, div); }
     
-    window.agregarFilaPareado = function(btn) {
-        const lista = btn.previousElementSibling;
-        const count = lista.querySelectorAll('.pareado-row').length + 1;
-        const div = document.createElement('div');
-        div.className = "flex gap-2 pareado-row mb-2 items-center";
-        div.innerHTML = `
-            <input type="text" placeholder="Concepto ${count}" class="w-1/2 text-[11px] par-izq bg-stone-50">
-            <input type="text" placeholder="Respuesta ${count}" class="w-1/2 text-[11px] par-der bg-stone-50">
-            <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 px-1 text-xs font-black" title="Eliminar pareja">✕</button>
-        `;
-        lista.appendChild(div);
-    };
+    window.agregarFilaPareado = function(btn) { const lista = btn.previousElementSibling; const count = lista.querySelectorAll('.pareado-row').length + 1; const div = document.createElement('div'); div.className = "flex gap-2 pareado-row mb-2 items-center"; div.innerHTML = `<input type="text" placeholder="Concepto ${count}" class="w-1/2 text-[11px] par-izq bg-stone-50"><input type="text" placeholder="Respuesta ${count}" class="w-1/2 text-[11px] par-der bg-stone-50"><button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 px-1 text-xs font-black" title="Eliminar pareja">✕</button>`; lista.appendChild(div); };
 
     function agregarPregunta(tipo, data = null) {
-      const id = Date.now() + Math.random();
-      const div = document.createElement('div');
-      
-      let bgClass = '';
-      if(tipo === 'multiple') bgClass = 'border-purple-100 bg-white';
-      else if(tipo === 'abierta') bgClass = 'border-blue-100 bg-blue-50/30';
-      else if(tipo === 'completacion') bgClass = 'border-yellow-100 bg-yellow-50/30';
-      else if(tipo === 'ahorcado') bgClass = 'border-red-100 bg-red-50/30';
-      else if(tipo === 'pareados') bgClass = 'border-indigo-100 bg-indigo-50/30';
-      else bgClass = 'border-green-100 bg-green-50/30';
-
-      div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${bgClass}`;
-      div.id = `pregunta-${id}`;
-      div.dataset.tipo = tipo;
-      
-      let html = `
-      <div class="absolute top-3 right-12 flex gap-1">
-          <button onclick="moverPreguntaArriba(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Subir">▲</button>
-          <button onclick="moverPreguntaAbajo(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Bajar">▼</button>
-      </div>
-      <button onclick="this.parentElement.remove()" class="absolute top-3 right-3 w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-300 rounded hover:bg-red-100 hover:text-red-500 transition-colors text-xs" title="Eliminar">✕</button>
-      <input type="text" value="${data?data.pregunta:''}" placeholder="${tipo==='completacion'?'Instrucción para el estudiante...':'Enunciado de la pregunta...'}" class="w-full mb-4 mt-2 text-xs font-bold q-text">`;
+      const id = Date.now() + Math.random(); const div = document.createElement('div'); let bgClass = '';
+      if(tipo === 'multiple') bgClass = 'border-purple-100 bg-white'; else if(tipo === 'abierta') bgClass = 'border-blue-100 bg-blue-50/30'; else if(tipo === 'completacion') bgClass = 'border-yellow-100 bg-yellow-50/30'; else if(tipo === 'ahorcado') bgClass = 'border-red-100 bg-red-50/30'; else if(tipo === 'pareados') bgClass = 'border-indigo-100 bg-indigo-50/30'; else bgClass = 'border-green-100 bg-green-50/30';
+      div.className = `p-5 rounded-2xl border-2 shadow-sm relative ${bgClass}`; div.id = `pregunta-${id}`; div.dataset.tipo = tipo;
+      let html = `<div class="absolute top-3 right-12 flex gap-1"><button onclick="moverPreguntaArriba(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Subir">▲</button><button onclick="moverPreguntaAbajo(this)" class="w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-400 rounded hover:bg-blue-100 hover:text-blue-600 transition-colors text-[10px]" title="Bajar">▼</button></div><button onclick="this.parentElement.remove()" class="absolute top-3 right-3 w-6 h-6 flex items-center justify-center bg-stone-100/50 text-stone-300 rounded hover:bg-red-100 hover:text-red-500 transition-colors text-xs" title="Eliminar">✕</button><input type="text" value="${data?data.pregunta:''}" placeholder="${tipo==='completacion'?'Instrucción para el estudiante...':'Enunciado de la pregunta...'}" class="w-full mb-4 mt-2 text-xs font-bold q-text">`;
       
       if (tipo === 'multiple') {
-        html += `<div class="space-y-2">
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones?.a||'':''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div>
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones?.b||'':''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div>
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones?.c||'':''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div>
-            <div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="d" ${data?.correcta==='d'?'checked':''}> <input type="text" value="${data?data.opciones?.d||'':''}" placeholder="Opción D" class="w-full text-[11px] opt-d"></div>
-        </div>`;
+        html += `<div class="space-y-2"><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="a" ${data?.correcta==='a'?'checked':(!data?'checked':'')}> <input type="text" value="${data?data.opciones?.a||'':''}" placeholder="Opción A" class="w-full text-[11px] opt-a"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="b" ${data?.correcta==='b'?'checked':''}> <input type="text" value="${data?data.opciones?.b||'':''}" placeholder="Opción B" class="w-full text-[11px] opt-b"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="c" ${data?.correcta==='c'?'checked':''}> <input type="text" value="${data?data.opciones?.c||'':''}" placeholder="Opción C" class="w-full text-[11px] opt-c"></div><div class="flex items-center gap-2"><input type="radio" name="correcta-${id}" value="d" ${data?.correcta==='d'?'checked':''}> <input type="text" value="${data?data.opciones?.d||'':''}" placeholder="Opción D" class="w-full text-[11px] opt-d"></div></div>`;
       } else if (tipo === 'verdadero_falso') {
         html += `<div class="flex gap-4"><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="verdadero" ${data?.correcta==='verdadero'?'checked':(!data?'checked':'')}> Verdadero</label><label class="text-xs font-bold"><input type="radio" name="correcta-${id}" value="falso" ${data?.correcta==='falso'?'checked':''}> Falso</label></div>`;
       } else if (tipo === 'completacion') {
-        html += `<div class="space-y-2">
-            <textarea placeholder="Texto con espacios. Ej: La capital de Colombia es ___" class="w-full text-[11px] font-bold comp-texto">${data?data.textoConcepto||'':''}</textarea>
-            <input type="text" value="${data?data.palabrasCorrectas||'':''}" placeholder="Palabras correctas separadas por coma" class="w-full text-[11px] comp-respuestas">
-        </div>`;
+        html += `<div class="space-y-2"><textarea placeholder="Texto con espacios. Ej: La capital de Colombia es ___" class="w-full text-[11px] font-bold comp-texto">${data?data.textoConcepto||'':''}</textarea><input type="text" value="${data?data.palabrasCorrectas||'':''}" placeholder="Palabras correctas separadas por coma" class="w-full text-[11px] comp-respuestas"></div>`;
       } else if (tipo === 'ahorcado') {
-        html += `<div class="space-y-2">
-            <input type="text" value="${data?data.palabraOculta||'':''}" placeholder="Palabra o frase a descubrir..." class="w-full text-[11px] font-bold ahorcado-palabra">
-            <input type="text" value="${data?data.pistas||'':''}" placeholder="Letras pista iniciales separadas por coma (Opcional)" class="w-full text-[11px] ahorcado-pistas">
-        </div>`;
+        html += `<div class="space-y-2"><input type="text" value="${data?data.palabraOculta||'':''}" placeholder="Palabra o frase a descubrir..." class="w-full text-[11px] font-bold ahorcado-palabra"><input type="text" value="${data?data.pistas||'':''}" placeholder="Letras pista iniciales separadas por coma (Opcional)" class="w-full text-[11px] ahorcado-pistas"></div>`;
       } else if (tipo === 'pareados') {
-          let rowsHtml = '';
-          const numPares = data && data.pares ? data.pares.length : 4;
-          for(let i=0; i<Math.max(4, numPares); i++) {
-              let valIzq = data && data.pares && data.pares[i] ? data.pares[i].izq : '';
-              let valDer = data && data.pares && data.pares[i] ? data.pares[i].der : '';
-              rowsHtml += `
-              <div class="flex gap-2 pareado-row mb-2 items-center">
-                  <input type="text" value="${valIzq}" placeholder="Concepto ${i+1}" class="w-1/2 text-[11px] par-izq bg-stone-50">
-                  <input type="text" value="${valDer}" placeholder="Respuesta ${i+1}" class="w-1/2 text-[11px] par-der bg-stone-50">
-                  <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 px-1 text-xs font-black" title="Eliminar pareja">✕</button>
-              </div>`;
-          }
-          
-          html += `<div class="space-y-2">
-              <p class="text-[10px] font-black text-stone-500 uppercase mt-2">Pares (Concepto - Respuesta correcta):</p>
-              <div class="pareados-lista">${rowsHtml}</div>
-              <button onclick="agregarFilaPareado(this)" type="button" class="text-[10px] font-black bg-stone-200 text-stone-700 px-3 py-2 rounded-lg hover:bg-stone-300 mt-2 transition-colors">+ Agregar Otra Pareja</button>
-          </div>`;
+          let rowsHtml = ''; const numPares = data && data.pares ? data.pares.length : 4;
+          for(let i=0; i<Math.max(4, numPares); i++) { let valIzq = data && data.pares && data.pares[i] ? data.pares[i].izq : ''; let valDer = data && data.pares && data.pares[i] ? data.pares[i].der : ''; rowsHtml += `<div class="flex gap-2 pareado-row mb-2 items-center"><input type="text" value="${valIzq}" placeholder="Concepto ${i+1}" class="w-1/2 text-[11px] par-izq bg-stone-50"><input type="text" value="${valDer}" placeholder="Respuesta ${i+1}" class="w-1/2 text-[11px] par-der bg-stone-50"><button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 px-1 text-xs font-black" title="Eliminar pareja">✕</button></div>`; }
+          html += `<div class="space-y-2"><p class="text-[10px] font-black text-stone-500 uppercase mt-2">Pares (Concepto - Respuesta correcta):</p><div class="pareados-lista">${rowsHtml}</div><button onclick="agregarFilaPareado(this)" type="button" class="text-[10px] font-black bg-stone-200 text-stone-700 px-3 py-2 rounded-lg hover:bg-stone-300 mt-2 transition-colors">+ Agregar Otra Pareja</button></div>`;
       }
-      div.innerHTML = html;
-      document.getElementById('contenedorPreguntas').appendChild(div);
+      div.innerHTML = html; document.getElementById('contenedorPreguntas').appendChild(div);
     }
 
     async function guardarTaller(status) {
@@ -475,85 +364,41 @@
         const vidUrl = document.getElementById('videoTaller').value.trim();
         const docUrl = document.getElementById('docTaller').value.trim();
         const permitirProgreso = document.getElementById('permitirProgreso').checked;
-        
         const estudianteEsp = document.getElementById('estudianteEspecifico').value.trim();
 
-        const divs = document.querySelectorAll('[id^="pregunta-"]');
-        let resps = [];
+        const divs = document.querySelectorAll('[id^="pregunta-"]'); let resps = [];
         divs.forEach(div => {
-            const t = div.dataset.tipo;
-            const qId = div.id.split('-')[1];
-            const pText = div.querySelector('.q-text').value;
+            const t = div.dataset.tipo; const qId = div.id.split('-')[1]; const pText = div.querySelector('.q-text').value;
             if(t==='multiple') resps.push({tipo:t, pregunta:pText, opciones:{a:div.querySelector('.opt-a').value, b:div.querySelector('.opt-b').value, c:div.querySelector('.opt-c').value, d:div.querySelector('.opt-d').value}, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='verdadero_falso') resps.push({tipo:t, pregunta:pText, correcta:div.querySelector(`input[name="correcta-${qId}"]:checked`).value});
             else if(t==='completacion') resps.push({tipo:t, pregunta:pText, textoConcepto:div.querySelector('.comp-texto').value, palabrasCorrectas:div.querySelector('.comp-respuestas').value});
             else if(t==='ahorcado') resps.push({tipo:t, pregunta:pText, palabraOculta:div.querySelector('.ahorcado-palabra').value, pistas:div.querySelector('.ahorcado-pistas').value});
-            else if(t==='pareados') {
-                let pares = [];
-                const rows = div.querySelectorAll('.pareado-row');
-                rows.forEach(row => {
-                    const izq = row.querySelector('.par-izq').value.trim();
-                    const der = row.querySelector('.par-der').value.trim();
-                    if(izq && der) pares.push({izq, der});
-                });
-                resps.push({tipo:t, pregunta:pText, pares});
-            }
+            else if(t==='pareados') { let pares = []; const rows = div.querySelectorAll('.pareado-row'); rows.forEach(row => { const izq = row.querySelector('.par-izq').value.trim(); const der = row.querySelector('.par-der').value.trim(); if(izq && der) pares.push({izq, der}); }); resps.push({tipo:t, pregunta:pText, pares}); }
             else resps.push({tipo:t, pregunta:pText});
         });
 
         const tieneDestinoValido = grados.length > 0 || estudianteEsp !== "";
-        if(!tieneDestinoValido || !titulo || !tipo || !area || !fechaVencimiento) {
-             return alert("Completa todos los campos principales. Selecciona un grado o un estudiante específico, además de Fecha de Cierre, Tipo y Área.");
-        }
-        if(!texto && !imgUrl && !vidUrl && !docUrl) return alert("Debes incluir un texto, una imagen, un video o un documento adjunto.");
+        if(!tieneDestinoValido || !titulo || !tipo || !area || !fechaVencimiento) { return alert("Completa todos los campos principales. Selecciona un grado o estudiante, Fecha de Cierre, Tipo y Área."); }
+        if(!texto && !imgUrl && !vidUrl && !docUrl) return alert("Debes incluir texto, imagen, video o documento adjunto.");
 
-        document.getElementById('btnPublicar').disabled = true;
-        document.getElementById('btnBorrador').disabled = true;
+        document.getElementById('btnPublicar').disabled = true; document.getElementById('btnBorrador').disabled = true;
 
-        const tallerData = { 
-            titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, docUrl: docUrl,
-            gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, 
-            fechaPublicacion: fechaPublicacion, fechaVencimiento: fechaVencimiento,
-            estudianteEspecifico: estudianteEsp, permitirProgreso: permitirProgreso,
-            preguntas: resps, status: status, activo: status === 'published', archived: false, 
-            timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) 
-        };
+        const tallerData = { titulo, contenido: texto, imageUrl: imgUrl, videoUrl: vidUrl, docUrl: docUrl, gradoDestino: grados, tipoActividad: tipo, areaConocimiento: area, fechaPublicacion: fechaPublicacion, fechaVencimiento: fechaVencimiento, estudianteEspecifico: estudianteEsp, permitirProgreso: permitirProgreso, preguntas: resps, status: status, activo: status === 'published', archived: false, timestamp: Date.now(), fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }) };
 
         let generarAviso = false;
-        if(status === 'published') {
-            if(!tallerEditandoId) { generarAviso = true; } 
-            else {
-                const tPrevio = cacheTalleresLocal.find(x => x.id === tallerEditandoId);
-                if(tPrevio && tPrevio.status === 'draft') generarAviso = true; 
-            }
-        }
+        if(status === 'published') { if(!tallerEditandoId) { generarAviso = true; } else { const tPrevio = cacheTalleresLocal.find(x => x.id === tallerEditandoId); if(tPrevio && tPrevio.status === 'draft') generarAviso = true; } }
 
-        if(tallerEditandoId) { await db.collection("talleresLectura").doc(tallerEditandoId).update(tallerData); } 
-        else { await db.collection("talleresLectura").add(tallerData); }
+        if(tallerEditandoId) { await db.collection("talleresLectura").doc(tallerEditandoId).update(tallerData); } else { await db.collection("talleresLectura").add(tallerData); }
 
         if(generarAviso) {
-            const fVencObj = new Date(fechaVencimiento);
-            const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
-            let msgPrivado = estudianteEsp ? `\n👤 Asignación Privada` : '';
-            
-            const pubDate = fechaPublicacion ? new Date(fechaPublicacion) : new Date();
-            const expDate = new Date(pubDate);
-            expDate.setHours(expDate.getHours() + 24);
-
-            await db.collection("tableroAvisos").add({
-                mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`,
-                color: 'blue', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), 
-                targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null,
-                publishAt: pubDate.toISOString(),
-                expiresAt: expDate.toISOString(),
-                timestamp: new Date().toISOString(), archived: false, isTallerNotice: true 
-            });
+            const fVencObj = new Date(fechaVencimiento); const strF = fVencObj.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true }); let msgPrivado = estudianteEsp ? `\n👤 Asignación Privada` : '';
+            const pubDate = fechaPublicacion ? new Date(fechaPublicacion) : new Date(); const expDate = new Date(pubDate); expDate.setHours(expDate.getHours() + 24);
+            await db.collection("tableroAvisos").add({ mensaje: `🎮 NUEVO TALLER\n📍 Área: ${area}\n📝 Trabajo: ${titulo}\n⏳ Cierre: ${strF}${msgPrivado}`, color: 'blue', scope: estudianteEsp ? 'Individual' : (grados.includes('Todos') ? 'General' : 'Grado'), targetGrades: grados, targetStudentDoc: estudianteEsp ? estudianteEsp : null, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString(), timestamp: new Date().toISOString(), archived: false, isTallerNotice: true });
         }
         location.reload();
     }
 
-    let filtroLista = 'publicados';
-    let cacheTalleresLocal = [];
+    let filtroLista = 'publicados'; let cacheTalleresLocal = [];
 
     function setFiltroLista(filtro) {
         filtroLista = filtro;
@@ -563,181 +408,65 @@
         renderizarTalleres();
     }
 
-    function cargarTalleres() {
-      db.collection("talleresLectura").orderBy("timestamp", "desc").onSnapshot(snap => {
-        cacheTalleresLocal = [];
-        snap.forEach(doc => cacheTalleresLocal.push({id: doc.id, ...doc.data()}));
-        renderizarTalleres();
-      });
-    }
+    function cargarTalleres() { db.collection("talleresLectura").orderBy("timestamp", "desc").onSnapshot(snap => { cacheTalleresLocal = []; snap.forEach(doc => cacheTalleresLocal.push({id: doc.id, ...doc.data()})); renderizarTalleres(); }); }
 
     async function reabrirActividad(id) {
-        const t = cacheTalleresLocal.find(x => x.id === id);
-        if(!t) return;
-
+        const t = cacheTalleresLocal.find(x => x.id === id); if(!t) return;
         let swalOptions = '<option value="">Todos (Grupal)</option>';
-        listaEstudiantesGlobal.forEach(est => {
-            let isSelected = (est.documento === t.estudianteEspecifico) ? 'selected' : '';
-            swalOptions += `<option value="${est.documento}" ${isSelected}>${est.nombre} - ${est.grado}</option>`;
-        });
-
-        let fechaFormat = t.fechaVencimiento || '';
-        if(fechaFormat.length > 16) {
-            fechaFormat = fechaFormat.substring(0, 16);
-        }
+        listaEstudiantesGlobal.forEach(est => { let isSelected = (est.documento === t.estudianteEspecifico) ? 'selected' : ''; swalOptions += `<option value="${est.documento}" ${isSelected}>${est.nombre} - ${est.grado}</option>`; });
+        let fechaFormat = t.fechaVencimiento || ''; if(fechaFormat.length > 16) { fechaFormat = fechaFormat.substring(0, 16); }
 
         const { value: formValues } = await Swal.fire({
-            title: 'Reabrir / Extender / Reintento',
-            html:
-                `<div class="text-left space-y-3">
-                    <label class="text-xs font-bold text-stone-600 block">Nueva Fecha de Cierre:</label>
-                    <input id="swal-fecha" type="datetime-local" class="swal2-input !w-[90%] !text-sm !m-0" value="${fechaFormat}">
-                    <label class="text-xs font-bold text-stone-600 block mt-4">Asignar a un estudiante (Borra el intento anterior si lo hay):</label>
-                    <select id="swal-estudiante" class="swal2-select !w-[90%] !text-sm !m-0">
-                        ${swalOptions}
-                    </select>
-                </div>`,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Actualizar y Habilitar',
-            cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-                const f = document.getElementById('swal-fecha').value;
-                if (!f) {
-                    Swal.showValidationMessage('Debes seleccionar una fecha obligatoriamente.');
-                    return false;
-                }
-                return [f, document.getElementById('swal-estudiante').value];
-            }
+            title: 'Reabrir / Extender',
+            html: `<div class="text-left space-y-3"><label class="text-xs font-bold text-stone-600 block">Nueva Fecha de Cierre:</label><input id="swal-fecha" type="datetime-local" class="swal2-input !w-[90%] !text-sm !m-0" value="${fechaFormat}"><label class="text-xs font-bold text-stone-600 block mt-4">Asignar a un estudiante (Borra el intento anterior si lo hay):</label><select id="swal-estudiante" class="swal2-select !w-[90%] !text-sm !m-0">${swalOptions}</select></div>`,
+            focusConfirm: false, showCancelButton: true, confirmButtonText: 'Actualizar y Habilitar', cancelButtonText: 'Cancelar',
+            preConfirm: () => { const f = document.getElementById('swal-fecha').value; if (!f) { Swal.showValidationMessage('Debes seleccionar una fecha obligatoriamente.'); return false; } return [f, document.getElementById('swal-estudiante').value]; }
         });
 
         if (formValues) {
-            const nuevaFecha = formValues[0];
-            const nuevoEstudianteDoc = formValues[1].trim();
-            
-            Swal.fire({
-                title: 'Procesando...',
-                text: 'Habilitando actividad y limpiando intentos previos.',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
+            const nuevaFecha = formValues[0]; const nuevoEstudianteDoc = formValues[1].trim();
+            Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             try {
-                await db.collection("talleresLectura").doc(id).update({
-                    fechaVencimiento: nuevaFecha,
-                    estudianteEspecifico: nuevoEstudianteDoc,
-                    activo: true, 
-                    archived: false, 
-                    status: 'published'
-                });
-
-                if (nuevoEstudianteDoc) {
-                    const resultadosSnap = await db.collection("resultadosTalleres")
-                        .where("idTaller", "==", id)
-                        .where("documentoEstudiante", "==", nuevoEstudianteDoc)
-                        .get();
-                    
-                    if (!resultadosSnap.empty) {
-                        const batch = db.batch();
-                        resultadosSnap.forEach((doc) => {
-                            batch.delete(doc.ref);
-                        });
-                        await batch.commit();
-                    }
-                }
-
+                await db.collection("talleresLectura").doc(id).update({ fechaVencimiento: nuevaFecha, estudianteEspecifico: nuevoEstudianteDoc, activo: true, archived: false, status: 'published' });
+                if (nuevoEstudianteDoc) { const resultadosSnap = await db.collection("resultadosTalleres").where("idTaller", "==", id).where("documentoEstudiante", "==", nuevoEstudianteDoc).get(); if (!resultadosSnap.empty) { const batch = db.batch(); resultadosSnap.forEach((doc) => { batch.delete(doc.ref); }); await batch.commit(); } }
                 Swal.fire('¡Habilitado!', 'La actividad ha sido reabierta.', 'success');
-            } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'Hubo un problema de conexión. Intenta nuevamente.', 'error');
-            }
+            } catch (error) { Swal.fire('Error', 'Hubo un problema de conexión.', 'error'); }
         }
     }
 
     function renderizarTalleres() {
-        const lista = document.getElementById('listaTalleres');
-        lista.innerHTML = "";
-        
-        let filtrados = cacheTalleresLocal.filter(t => {
-            if (filtroLista === 'archivados') return t.archived === true;
-            if (filtroLista === 'borradores') return t.status === 'draft' && !t.archived;
-            return t.status === 'published' && !t.archived;
-        });
-
-        if(filtrados.length === 0) { lista.innerHTML = `<p class="col-span-2 text-center text-xs text-stone-400 font-black uppercase py-6">No hay registros en esta categoría.</p>`; return; }
+        const lista = document.getElementById('listaTalleres'); lista.innerHTML = "";
+        let filtrados = cacheTalleresLocal.filter(t => { if (filtroLista === 'archivados') return t.archived === true; if (filtroLista === 'borradores') return t.status === 'draft' && !t.archived; return t.status === 'published' && !t.archived; });
+        if(filtrados.length === 0) { lista.innerHTML = `<p class="col-span-2 text-center text-xs text-stone-400 font-black uppercase py-6">No hay registros.</p>`; return; }
 
         filtrados.forEach(t => {
-            let btnArchivar = t.archived 
-                ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
-                : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
+            let btnArchivar = t.archived ? `<button onclick="toggleArchivar('${t.id}', false, '${t.status}')" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200">Desarchivar</button>` : `<button onclick="toggleArchivar('${t.id}', true, '${t.status}')" class="text-orange-700 text-[10px] font-black uppercase bg-orange-100 px-3 py-1.5 rounded-lg hover:bg-orange-200">Archivar</button>`;
             let btnEditar = !t.archived ? `<button onclick="editarTaller('${t.id}')" class="text-blue-700 text-[10px] font-black uppercase bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200">Editar</button>` : '';
             let btnReabrir = (t.status === 'published' || t.archived) ? `<button onclick="reabrirActividad('${t.id}')" class="text-indigo-700 text-[10px] font-black uppercase bg-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-200">Reabrir / Extender</button>` : '';
-
-            let nombreEstudiante = t.estudianteEspecifico;
-            let matchEst = listaEstudiantesGlobal.find(e => e.documento === t.estudianteEspecifico);
-            if(matchEst) nombreEstudiante = matchEst.nombre;
-
+            let nombreEstudiante = t.estudianteEspecifico; let matchEst = listaEstudiantesGlobal.find(e => e.documento === t.estudianteEspecifico); if(matchEst) nombreEstudiante = matchEst.nombre;
             let badgeEstudiante = t.estudianteEspecifico ? `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1">👤 ${nombreEstudiante}</span>` : '';
-            
-            let badgeProgramado = '';
-            if (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) {
-                const fPub = new Date(t.fechaPublicacion);
-                const strPub = fPub.toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-                badgeProgramado = `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1 inline-block mt-1">⏳ PROGRAMADA PARA: ${strPub}</span>`;
-            }
+            let badgeProgramado = ''; if (t.fechaPublicacion && new Date(t.fechaPublicacion) > new Date()) { const fPub = new Date(t.fechaPublicacion); const strPub = fPub.toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }); badgeProgramado = `<span class="text-[8px] font-black bg-blue-100 px-2 py-0.5 rounded uppercase text-blue-600 ml-1 inline-block mt-1">⏳ PROGRAMADA: ${strPub}</span>`; }
 
-            lista.innerHTML += `
-              <div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}">
-                <div class="flex justify-between items-start mb-4">
-                  <div class="flex-1 pr-2">
-                      <span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.length ? t.gradoDestino.join(', ') : 'Privado'}</span>
-                      ${badgeEstudiante}
-                      <br>${badgeProgramado}
-                      <h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3>
-                      <p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p>
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">
-                    ${btnReabrir}
-                    ${btnEditar}
-                    ${btnArchivar}
-                    <button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button>
-                </div>
-              </div>`;
+            lista.innerHTML += `<div class="card p-5 border-l-4 ${t.status === 'draft' ? 'border-orange-400 bg-orange-50/30' : (t.archived ? 'border-stone-400 bg-stone-50' : 'border-purple-600')}"><div class="flex justify-between items-start mb-4"><div class="flex-1 pr-2"><span class="text-[8px] font-black bg-stone-200 px-2 py-0.5 rounded uppercase text-stone-600">${t.gradoDestino.length ? t.gradoDestino.join(', ') : 'Privado'}</span>${badgeEstudiante}<br>${badgeProgramado}<h3 class="text-sm font-black text-stone-800 uppercase mt-1 leading-tight">${t.titulo}</h3><p class="text-[9px] font-bold text-stone-400 uppercase mt-1">${t.tipoActividad} | Cierre: ${new Date(t.fechaVencimiento).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'})}</p></div></div><div class="flex flex-wrap gap-2 pt-3 border-t border-stone-200 justify-end">${btnReabrir}${btnEditar}${btnArchivar}<button onclick="eliminarTaller('${t.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200">Eliminar</button></div></div>`;
         });
     }
 
     async function editarTaller(id) {
-        const t = cacheTalleresLocal.find(x => x.id === id);
-        if(!t) return;
-        tallerEditandoId = id;
-        document.getElementById('form-title').innerText = "Editando: " + t.titulo;
-        document.getElementById('tituloTaller').value = t.titulo;
-        document.getElementById('fechaPublicacion').value = t.fechaPublicacion || '';
-        document.getElementById('estudianteEspecifico').value = t.estudianteEspecifico || '';
-        document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
-        
+        const t = cacheTalleresLocal.find(x => x.id === id); if(!t) return;
+        tallerEditandoId = id; document.getElementById('form-title').innerText = "Editando: " + t.titulo;
+        document.getElementById('tituloTaller').value = t.titulo; document.getElementById('fechaPublicacion').value = t.fechaPublicacion || ''; document.getElementById('estudianteEspecifico').value = t.estudianteEspecifico || ''; document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
         document.getElementById('textoLectura').value = t.contenido || '';
         if(quillEditor) quillEditor.root.innerHTML = t.contenido || '';
-
-        document.getElementById('imagenTaller').value = t.imageUrl || '';
-        document.getElementById('videoTaller').value = t.videoUrl || '';
-        document.getElementById('docTaller').value = t.docUrl || '';
-        document.getElementById('tipoActividad').value = t.tipoActividad;
-        document.getElementById('areaConocimiento').value = t.areaConocimiento;
-        document.getElementById('permitirProgreso').checked = t.permitirProgreso || false;
+        document.getElementById('imagenTaller').value = t.imageUrl || ''; document.getElementById('videoTaller').value = t.videoUrl || ''; document.getElementById('docTaller').value = t.docUrl || ''; document.getElementById('tipoActividad').value = t.tipoActividad; document.getElementById('areaConocimiento').value = t.areaConocimiento; document.getElementById('permitirProgreso').checked = t.permitirProgreso || false;
         document.querySelectorAll('.badge-grado').forEach(b => { b.classList.remove('selected'); if(t.gradoDestino && t.gradoDestino.includes(b.getAttribute('value'))) b.classList.add('selected'); });
-        document.getElementById('contenedorPreguntas').innerHTML = "";
-        t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
+        document.getElementById('contenedorPreguntas').innerHTML = ""; t.preguntas.forEach(p => agregarPregunta(p.tipo, p));
         document.getElementById('form-title').scrollIntoView({ behavior: 'smooth' });
     }
 
     async function toggleArchivar(id, isArchiving, statusActual) { await db.collection("talleresLectura").doc(id).update({ archived: isArchiving, activo: isArchiving ? false : (statusActual === 'published') }); }
-    async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar Definitivamente?', text:'Esta acción no se puede deshacer.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
+    async function eliminarTaller(id) { if((await Swal.fire({title:'¿Eliminar Definitivamente?', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("talleresLectura").doc(id).delete(); } }
 
-    let cacheResultados = [];
-    let filtroResultados = 'activos';
-    let resultadosFiltrados = []; 
+    let cacheResultados = []; let filtroResultados = 'activos'; let resultadosFiltrados = []; 
 
     function setFiltroResultados(filtro) {
         filtroResultados = filtro;
@@ -746,241 +475,84 @@
         renderizarResultados();
     }
 
-    function cargarResultados() {
-        db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => {
-            cacheResultados = [];
-            snap.forEach(doc => { cacheResultados.push({id: doc.id, ...doc.data()}) });
-            actualizarDropdownActividades(); 
-            renderizarResultados();
-        });
-    }
+    function cargarResultados() { db.collection("resultadosTalleres").orderBy("timestamp", "desc").onSnapshot(snap => { cacheResultados = []; snap.forEach(doc => { cacheResultados.push({id: doc.id, ...doc.data()}) }); actualizarDropdownActividades(); renderizarResultados(); }); }
 
     function actualizarDropdownActividades() {
-        const select = document.getElementById('busqueda-actividad');
-        if(!select) return;
-        
-        const valorPrevio = select.value;
-        const actividadesUnicas = [...new Set(cacheResultados.map(r => r.tituloTaller))].filter(Boolean);
-        
+        const select = document.getElementById('busqueda-actividad'); if(!select) return;
+        const valorPrevio = select.value; const actividadesUnicas = [...new Set(cacheResultados.map(r => r.tituloTaller))].filter(Boolean);
         let html = '<option value="">Todas las Actividades</option>';
-        actividadesUnicas.forEach(act => { 
-            html += `<option value="${act}">${act}</option>`; 
-        });
-        
-        select.innerHTML = html;
-        if(actividadesUnicas.includes(valorPrevio)) select.value = valorPrevio;
+        actividadesUnicas.forEach(act => { html += `<option value="${act}">${act}</option>`; });
+        select.innerHTML = html; if(actividadesUnicas.includes(valorPrevio)) select.value = valorPrevio;
     }
 
     function renderizarResultados() {
         const div = document.getElementById("listaResultados");
-        
         const termEstudiante = document.getElementById('busqueda-estudiante') ? document.getElementById('busqueda-estudiante').value.toLowerCase() : '';
         const termGrado = document.getElementById('busqueda-grado') ? document.getElementById('busqueda-grado').value : '';
         const termActividad = document.getElementById('busqueda-actividad') ? document.getElementById('busqueda-actividad').value : ''; 
 
-        resultadosFiltrados = cacheResultados.filter(r => {
-            const estadoMatch = filtroResultados === 'archivados' ? r.archived === true : !r.archived;
-            const estudianteMatch = (r.nombreEstudiante || '').toLowerCase().includes(termEstudiante);
-            const gradoMatch = termGrado === '' || r.grado === termGrado;
-            const actividadMatch = termActividad === '' || r.tituloTaller === termActividad; 
-            
-            return estadoMatch && estudianteMatch && gradoMatch && actividadMatch;
-        });
-        
+        resultadosFiltrados = cacheResultados.filter(r => { const estadoMatch = filtroResultados === 'archivados' ? r.archived === true : !r.archived; const estudianteMatch = (r.nombreEstudiante || '').toLowerCase().includes(termEstudiante); const gradoMatch = termGrado === '' || r.grado === termGrado; const actividadMatch = termActividad === '' || r.tituloTaller === termActividad; return estadoMatch && estudianteMatch && gradoMatch && actividadMatch; });
         div.innerHTML = resultadosFiltrados.length === 0 ? '<p class="text-center py-20 text-stone-400 text-xs uppercase font-black">Sin respuestas en esta categoría o filtro</p>' : "";
         
         resultadosFiltrados.forEach(res => {
-            let respuestasHtml = res.respuestas.map((r, i) => {
-                let icono = r.esCorrecta ? '✅' : '❌';
-                if (r.tipo === 'abierta' || r.tipo === 'completacion') icono = '📝';
-                if (r.tipo === 'ahorcado') icono = '🎮';
-                if (r.tipo === 'pareado_item') icono = '🧩';
-                return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`;
-            }).join("");
-            
+            let respuestasHtml = res.respuestas.map((r, i) => { let icono = r.esCorrecta ? '✅' : '❌'; if (r.tipo === 'abierta' || r.tipo === 'completacion') icono = '📝'; if (r.tipo === 'ahorcado') icono = '🎮'; if (r.tipo === 'pareado_item') icono = '🧩'; return `<div class="p-3 bg-stone-50 rounded-xl mb-2 border border-stone-100"><p class="text-[10px] font-black text-stone-400 uppercase">P${i+1}: ${r.pregunta}</p><p class="text-xs font-bold text-stone-700">${icono} Resp: ${r.respuestaDada}</p></div>`; }).join("");
             let bloqueNotaHtml = "";
-            if (res.requiereRevision) {
-                bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`;
-            } else {
-                let notaFinalVisual = parseFloat(res.nota) || 0;
-                if (notaFinalVisual > 5 && res.totalCerradas) {
-                    notaFinalVisual = (notaFinalVisual / res.totalCerradas) * 5.0;
-                }
-                
-                bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${notaFinalVisual >= 3 ? 'text-green-600' : 'text-red-600'}">${notaFinalVisual.toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final (Max 5.0)</p></div>`;
-            }
+            if (res.requiereRevision) { bloqueNotaHtml = `<div class="flex flex-col items-end gap-1"><span class="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-1 rounded">⚠️ REVISAR</span><span class="text-[9px] font-bold text-stone-400">Automáticas: ${res.aciertosCerrados}/${res.totalCerradas}</span><div class="flex items-center gap-1 mt-1"><input type="number" id="nota-${res.id}" placeholder="Nota..." step="0.1" min="0" max="5" class="w-16 h-8 text-center text-xs font-black border-2 border-orange-300 rounded-lg p-0 bg-white"><button onclick="calificarManual('${res.id}')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black shadow-md">OK</button></div></div>`; } 
+            else { let notaFinalVisual = parseFloat(res.nota) || 0; if (notaFinalVisual > 5 && res.totalCerradas) { notaFinalVisual = (notaFinalVisual / res.totalCerradas) * 5.0; } bloqueNotaHtml = `<div class="text-right"><span class="text-2xl font-black ${notaFinalVisual >= 3 ? 'text-green-600' : 'text-red-600'}">${notaFinalVisual.toFixed(1)}</span><p class="text-[8px] font-black opacity-40 uppercase">Nota Final (Max 5.0)</p></div>`; }
+            let btnArchivarRes = res.archived ? `<button onclick="toggleArchivarResultado('${res.id}', false)" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-200">Desarchivar</button>` : `<button onclick="toggleArchivarResultado('${res.id}', true)" class="text-stone-700 text-[10px] font-black uppercase bg-stone-200 px-3 py-2 rounded-lg hover:bg-stone-300">Archivar</button>`;
 
-            let btnArchivarRes = res.archived 
-                ? `<button onclick="toggleArchivarResultado('${res.id}', false)" class="text-emerald-700 text-[10px] font-black uppercase bg-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-200">Desarchivar</button>`
-                : `<button onclick="toggleArchivarResultado('${res.id}', true)" class="text-stone-700 text-[10px] font-black uppercase bg-stone-200 px-3 py-2 rounded-lg hover:bg-stone-300">Archivar</button>`;
-
-            div.innerHTML += `
-            <div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p>
-                        <div class="flex items-center gap-3">
-                            <h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3>
-                            <button onclick="document.getElementById('respuestas-${res.id}').classList.toggle('hidden')" class="bg-stone-200 text-stone-700 text-[9px] font-black px-3 py-1.5 rounded-lg hover:bg-stone-300 transition-all active:scale-95 shadow-sm">👁️ VISUALIZAR</button>
-                        </div>
-                        <p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p>
-                    </div>
-                    ${bloqueNotaHtml}
-                </div>
-                
-                <div id="respuestas-${res.id}" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 bg-stone-100 p-3 rounded-xl border border-stone-200">
-                    ${respuestasHtml}
-                </div>
-                
-                <div class="border-t border-stone-200 pt-3 flex flex-wrap gap-2 justify-end">
-                    <button onclick="habilitarReintento('${res.id}')" class="text-purple-700 text-[10px] font-black uppercase bg-purple-100 px-3 py-2 rounded-lg hover:bg-purple-200">🔄 Habilitar Reintento</button>
-                    ${btnArchivarRes}
-                    <button onclick="eliminarResultadoDefinitivo('${res.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-2 rounded-lg hover:bg-red-200">Eliminar Definitivo</button>
-                </div>
-            </div>`;
+            div.innerHTML += `<div class="card p-6 border ${res.requiereRevision ? 'border-orange-200 bg-orange-50/20' : 'border-stone-100'}"><div class="flex justify-between items-start mb-4"><div><p class="text-[9px] font-black text-purple-600 uppercase mb-1">${res.grado} · ${res.tituloTaller}</p><div class="flex items-center gap-3"><h3 class="font-black text-stone-800 text-base uppercase leading-tight">${res.nombreEstudiante}</h3><button onclick="document.getElementById('respuestas-${res.id}').classList.toggle('hidden')" class="bg-stone-200 text-stone-700 text-[9px] font-black px-3 py-1.5 rounded-lg hover:bg-stone-300 transition-all active:scale-95 shadow-sm">👁️ VISUALIZAR</button></div><p class="text-[10px] text-stone-400 font-bold uppercase mt-1">${res.fecha}</p></div>${bloqueNotaHtml}</div><div id="respuestas-${res.id}" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 bg-stone-100 p-3 rounded-xl border border-stone-200">${respuestasHtml}</div><div class="border-t border-stone-200 pt-3 flex flex-wrap gap-2 justify-end"><button onclick="habilitarReintento('${res.id}')" class="text-purple-700 text-[10px] font-black uppercase bg-purple-100 px-3 py-2 rounded-lg hover:bg-purple-200">🔄 Habilitar Reintento</button>${btnArchivarRes}<button onclick="eliminarResultadoDefinitivo('${res.id}')" class="text-red-700 text-[10px] font-black uppercase bg-red-100 px-3 py-2 rounded-lg hover:bg-red-200">Eliminar Definitivo</button></div></div>`;
         });
     }
 
     async function calificarManual(docId) {
-        const inputVal = document.getElementById(`nota-${docId}`).value;
-        const notaDefinitiva = parseFloat(inputVal.replace(',', '.'));
+        const inputVal = document.getElementById(`nota-${docId}`).value; const notaDefinitiva = parseFloat(inputVal.replace(',', '.'));
         if(isNaN(notaDefinitiva) || notaDefinitiva < 0 || notaDefinitiva > 5) { return alert("Ingresa una nota válida entre 0 y 5.0"); }
-        
         Swal.fire({title: 'Guardando nota y otorgando XP...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-
-        const resRef = db.collection("resultadosTalleres").doc(docId);
-        const resSnap = await resRef.get();
-        
+        const resRef = db.collection("resultadosTalleres").doc(docId); const resSnap = await resRef.get();
         if (resSnap.exists) {
-            const data = resSnap.data();
-            const batch = db.batch();
-            batch.update(resRef, { nota: notaDefinitiva, requiereRevision: false });
-            
-            let xpToAward = 50; 
-            if (notaDefinitiva >= 4.0) xpToAward += 20;
-            
-            let nuevosLogros = [];
+            const data = resSnap.data(); const batch = db.batch(); batch.update(resRef, { nota: notaDefinitiva, requiereRevision: false });
+            let xpToAward = 50; if (notaDefinitiva >= 4.0) xpToAward += 20; let nuevosLogros = [];
             if (notaDefinitiva === 5.0) {
                 const tallerSnap = await db.collection("talleresLectura").doc(data.idTaller).get();
                 if(tallerSnap.exists) {
-                    const ac = (tallerSnap.data().areaConocimiento || "").toUpperCase();
-                    let codigoLogro = "perfecto_gral";
-                    if (ac.includes("MATEMATICAS")) codigoLogro = "matematicas_5";
-                    else if (ac.includes("ESPAÑOL") || ac.includes("LENGUAJE")) codigoLogro = "espanol_5";
-                    else if (ac.includes("NATURALES")) codigoLogro = "naturales_5";
-                    else if (ac.includes("SOCIALES")) codigoLogro = "sociales_5";
-                    else if (ac.includes("INGLES")) codigoLogro = "ingles_5";
-                    
-                    nuevosLogros.push(codigoLogro);
-                    xpToAward += 100;
+                    const ac = (tallerSnap.data().areaConocimiento || "").toUpperCase(); let codigoLogro = "perfecto_gral";
+                    if (ac.includes("MATEMATICAS")) codigoLogro = "matematicas_5"; else if (ac.includes("ESPAÑOL") || ac.includes("LENGUAJE")) codigoLogro = "espanol_5"; else if (ac.includes("NATURALES")) codigoLogro = "naturales_5"; else if (ac.includes("SOCIALES")) codigoLogro = "sociales_5"; else if (ac.includes("INGLES")) codigoLogro = "ingles_5";
+                    nuevosLogros.push(codigoLogro); xpToAward += 100;
                 }
             }
-
             const logRef = db.collection("logrosEstudiantes").doc(data.documentoEstudiante);
-            const updateLogData = {
-                xp: firebase.firestore.FieldValue.increment(xpToAward),
-                documentoEstudiante: data.documentoEstudiante,
-                nombreEstudiante: data.nombreEstudiante
-            };
-            if(nuevosLogros.length > 0) {
-                updateLogData.logros = firebase.firestore.FieldValue.arrayUnion(...nuevosLogros);
-            }
+            const updateLogData = { xp: firebase.firestore.FieldValue.increment(xpToAward), documentoEstudiante: data.documentoEstudiante, nombreEstudiante: data.nombreEstudiante };
+            if(nuevosLogros.length > 0) { updateLogData.logros = firebase.firestore.FieldValue.arrayUnion(...nuevosLogros); }
             batch.set(logRef, updateLogData, { merge: true });
-
-            const histRef = db.collection("historialXP").doc();
-            batch.set(histRef, {
-                documentoEstudiante: data.documentoEstudiante,
-                motivo: `Calificación final de Taller: ${data.tituloTaller}`,
-                cantidad: xpToAward,
-                timestamp: Date.now()
-            });
-
-            const expDate = new Date();
-            expDate.setHours(expDate.getHours() + 48); 
-            const noticeRef = db.collection("tableroAvisos").doc();
-            batch.set(noticeRef, {
-                mensaje: `✅ Taller Calificado: "${data.tituloTaller}".\nEl profe revisó tu respuesta escrita. Tu nota final es: ${notaDefinitiva}\n¡Has ganado +${xpToAward} XP!`,
-                color: 'green', imageUrl: '', videoUrl: '', docUrl: '',
-                scope: 'Individual', targetGrades: [], targetStudentDoc: data.documentoEstudiante,
-                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: true,
-                publishAt: new Date().toISOString(), expiresAt: expDate.toISOString()
-            });
-
-            await batch.commit();
-            Swal.fire({icon: 'success', title: '¡Calificado!', text: `Nota guardada y ${xpToAward} XP otorgados al estudiante.`, timer: 2000, showConfirmButton: false});
+            batch.set(db.collection("historialXP").doc(), { documentoEstudiante: data.documentoEstudiante, motivo: `Calificación final de Taller: ${data.tituloTaller}`, cantidad: xpToAward, timestamp: Date.now() });
+            const expDate = new Date(); expDate.setHours(expDate.getHours() + 48); 
+            batch.set(db.collection("tableroAvisos").doc(), { mensaje: `✅ Taller Calificado: "${data.tituloTaller}".\nEl profe revisó tu respuesta escrita. Tu nota final es: ${notaDefinitiva}\n¡Has ganado +${xpToAward} XP!`, color: 'green', imageUrl: '', videoUrl: '', docUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: data.documentoEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: true, publishAt: new Date().toISOString(), expiresAt: expDate.toISOString() });
+            await batch.commit(); Swal.fire({icon: 'success', title: '¡Calificado!', text: `Nota guardada y ${xpToAward} XP otorgados al estudiante.`, timer: 2000, showConfirmButton: false});
         }
     }
 
-    async function habilitarReintento(docId) {
-        if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) {
-            await db.collection("resultadosTalleres").doc(docId).delete();
-            Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success');
-        }
-    }
-
-    async function toggleArchivarResultado(id, isArchiving) {
-        await db.collection("resultadosTalleres").doc(id).update({ archived: isArchiving });
-    }
-
-    async function eliminarResultadoDefinitivo(id) {
-        if((await Swal.fire({title:'¿Eliminar Resultado?', text:'Esta acción borrará la nota permanentemente de la base de datos.', icon:'error', showCancelButton:true, confirmButtonText: 'Sí, eliminar', confirmButtonColor:'#d33'})).isConfirmed) { 
-            await db.collection("resultadosTalleres").doc(id).delete(); 
-        }
-    }
+    async function habilitarReintento(docId) { if((await Swal.fire({title:'¿Permitir Reintento?', text:'Se borrará la nota y el estudiante podrá entrar de nuevo.', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("resultadosTalleres").doc(docId).delete(); Swal.fire('Habilitado', 'El estudiante ya puede resolver el taller nuevamente.', 'success'); } }
+    async function toggleArchivarResultado(id, isArchiving) { await db.collection("resultadosTalleres").doc(id).update({ archived: isArchiving }); }
+    async function eliminarResultadoDefinitivo(id) { if((await Swal.fire({title:'¿Eliminar Resultado?', text:'Esta acción borrará la nota permanentemente.', icon:'error', showCancelButton:true, confirmButtonText: 'Sí, eliminar', confirmButtonColor:'#d33'})).isConfirmed) { await db.collection("resultadosTalleres").doc(id).delete(); } }
 
     function descargarReportePDF() {
         if(resultadosFiltrados.length === 0) return alert("No hay datos para exportar con los filtros actuales.");
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
-        
-        const body = resultadosFiltrados.map(r => { 
-            let notaFinalPDF = parseFloat(r.nota) || 0;
-            if (notaFinalPDF > 5 && r.totalCerradas) notaFinalPDF = (notaFinalPDF / r.totalCerradas) * 5.0;
-            const notaCelda = r.requiereRevision ? 'Pendiente' : notaFinalPDF.toFixed(1); 
-            return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; 
-        });
-        
-        doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } });
-        doc.save("Reporte_Lectura_Oscar.pdf");
+        const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(14); doc.text("REPORTE DE ACTIVIDADES EVALUATIVAS - 2026", 10, 15);
+        const body = resultadosFiltrados.map(r => { let notaFinalPDF = parseFloat(r.nota) || 0; if (notaFinalPDF > 5 && r.totalCerradas) notaFinalPDF = (notaFinalPDF / r.totalCerradas) * 5.0; const notaCelda = r.requiereRevision ? 'Pendiente' : notaFinalPDF.toFixed(1); return [r.grado, r.nombreEstudiante, r.tituloTaller, notaCelda, r.fecha]; });
+        doc.autoTable({ startY: 25, head: [['GRADO', 'ESTUDIANTE', 'TALLER', 'NOTA', 'FECHA']], body: body, headStyles: { fillColor: [107, 33, 168] } }); doc.save("Reporte_Lectura_Oscar.pdf");
     }
 
     function cargarListaEstudiantes() {
         db.collection("configuracionGlobal").doc("listasEstudiantes").get().then(doc => {
             if (doc.exists) {
-                const listas = doc.data();
-                
-                if (!listas['Quinto']) listas['Quinto'] = [];
-                const pedroData = "Pedro Pérez - 12345678";
-                if (!listas['Quinto'].includes(pedroData)) {
-                    listas['Quinto'].push(pedroData);
-                    db.collection("configuracionGlobal").doc("listasEstudiantes").update({
-                        'Quinto': firebase.firestore.FieldValue.arrayUnion(pedroData)
-                    });
-                }
-
+                const listas = doc.data(); if (!listas['Quinto']) listas['Quinto'] = [];
+                const pedroData = "Pedro Pérez - 12345678"; if (!listas['Quinto'].includes(pedroData)) { listas['Quinto'].push(pedroData); db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Quinto': firebase.firestore.FieldValue.arrayUnion(pedroData) }); }
                 listaEstudiantesGlobal = [];
-                for (const grado in listas) {
-                    const estudiantes = listas[grado];
-                    if (Array.isArray(estudiantes)) {
-                        estudiantes.forEach(estudianteStr => {
-                            const partes = estudianteStr.split(' - ');
-                            const nombre = partes[0].trim();
-                            const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre;
-                            listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado });
-                        });
-                    }
-                }
-                
+                for (const grado in listas) { const estudiantes = listas[grado]; if (Array.isArray(estudiantes)) { estudiantes.forEach(estudianteStr => { const partes = estudianteStr.split(' - '); const nombre = partes[0].trim(); const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre; listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado }); }); } }
                 listaEstudiantesGlobal.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-                const selectEl = document.getElementById('estudianteEspecifico');
-                let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
-                
-                listaEstudiantesGlobal.forEach(est => {
-                    htmlOptions += `<option value="${est.documento}">${est.nombre} - ${est.grado}</option>`;
-                });
-                
+                const selectEl = document.getElementById('estudianteEspecifico'); let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
+                listaEstudiantesGlobal.forEach(est => { htmlOptions += `<option value="${est.documento}">${est.nombre} - ${est.grado}</option>`; });
                 selectEl.innerHTML = htmlOptions; 
             }
         }).catch(err => console.error("Error cargando lista de estudiantes: ", err));
@@ -997,10 +569,7 @@
             placeholder: 'Escribe aquí la lectura. Usa colores, viñetas, títulos...'
         });
         
-        // Cada que el profesor escriba, pasamos el HTML al input oculto
-        quillEditor.on('text-change', function() {
-            document.getElementById('textoLectura').value = quillEditor.root.innerHTML;
-        });
+        quillEditor.on('text-change', function() { document.getElementById('textoLectura').value = quillEditor.root.innerHTML; });
     };
   </script>
 </body>
