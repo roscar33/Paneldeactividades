@@ -1,4 +1,4 @@
-here<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -15,6 +15,10 @@ here<!DOCTYPE html>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f5f5f4; color: #451a03; }
     .card { background: white; border-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -38,6 +42,11 @@ here<!DOCTYPE html>
     .preview-content .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; overflow: hidden; border-radius: 12px; margin-bottom: 15px; background: #000; }
     .preview-content .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
     .preview-btn { width: 100%; padding: 15px; background: #0277bd; color: #fff; font-weight: 800; border: none; border-radius: 14px; font-size: 15px; box-shadow: 0 4px 0 #01579b; margin-top: 5px; opacity: 0.6; cursor: not-allowed;}
+
+    /* ESTILOS DEL NUEVO EDITOR DE TEXTO */
+    .ql-toolbar { border-radius: 14px 14px 0 0 !important; border-color: #e7e5e4 !important; background: #f5f5f4; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .ql-container { border-radius: 0 0 14px 14px !important; border-color: #e7e5e4 !important; background: #ffffff; font-family: 'Lora', serif; font-size: 15px; height: 250px; }
+    .ql-editor { min-height: 250px; }
   </style>
 </head>
 <body class="p-4 pb-20">
@@ -104,9 +113,36 @@ here<!DOCTYPE html>
                 <select id="areaConocimiento" class="w-full text-xs font-bold bg-stone-50"><option value="">Área...</option><option>ESPAÑOL (LENGUAJE)</option><option>MATEMATICAS</option><option>CIENCIAS NATURALES</option><option>CIENCIAS SOCIALES</option><option>INGLES</option><option>ARTISTICA</option><option>EDUCACION FISICA</option><option>ETICA Y VALORES</option><option>RELIGION</option><option>TECNOLOGIA E INFORMATICA</option></select>
             </div>
 
-            <textarea id="textoLectura" rows="5" placeholder="Pega el texto aquí (Opcional si usas imagen/video/documento)..." class="w-full text-sm font-medium mt-2"></textarea>
+            <div class="mt-4 mb-2">
+                <label class="text-[10px] font-black text-stone-500 uppercase px-1 mb-1 block">Contenido del Taller (Lectura):</label>
+                <div id="editor-toolbar">
+                    <span class="ql-formats">
+                        <select class="ql-header">
+                            <option value="1">Título Grande</option>
+                            <option value="2">Subtítulo</option>
+                            <option selected>Normal</option>
+                        </select>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-bold" title="Negrita"></button>
+                        <button class="ql-italic" title="Cursiva"></button>
+                        <button class="ql-underline" title="Subrayado"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <select class="ql-color" title="Color de Letra"></select>
+                        <select class="ql-background" title="Color de Fondo"></select>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-list" value="ordered" title="Lista numerada (Numerales)"></button>
+                        <button class="ql-list" value="bullet" title="Lista (Viñetas)"></button>
+                        <select class="ql-align" title="Alinear"></select>
+                    </span>
+                </div>
+                <div id="textoLecturaEditor"></div>
+                <input type="hidden" id="textoLectura">
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                 <div class="flex gap-2">
                     <input type="text" id="imagenTaller" placeholder="URL de Imagen o sube una..." class="w-full text-xs font-bold flex-1">
                     <label class="bg-stone-200 text-stone-600 px-3 py-3 rounded-xl cursor-pointer hover:bg-stone-300 text-xs font-bold flex items-center justify-center border-1.5 border-stone-300" title="Subir desde el equipo">
@@ -188,8 +224,8 @@ here<!DOCTYPE html>
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let tallerEditandoId = null;
-
     let listaEstudiantesGlobal = [];
+    let quillEditor;
 
     function convertirImagenABase64(event) {
         const file = event.target.files[0];
@@ -207,7 +243,7 @@ here<!DOCTYPE html>
 
     function abrirVistaPrevia() {
         const titulo = document.getElementById('tituloTaller').value || "TÍTULO DE LA ACTIVIDAD";
-        const texto = document.getElementById('textoLectura').value;
+        const texto = document.getElementById('textoLectura').value; // ESTE AHORA ES HTML
         const imgUrl = document.getElementById('imagenTaller').value.trim();
         const vidUrl = document.getElementById('videoTaller').value.trim();
         const docUrl = document.getElementById('docTaller').value.trim();
@@ -245,10 +281,8 @@ here<!DOCTYPE html>
             mediaTextHtml += `<div style="width: 100%; height: 400px; border-radius: 12px; margin-bottom: 15px; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"><iframe src="${embedUrl}" style="width: 100%; height: 100%; border: 0;"></iframe></div>`;
         }
 
-        if(texto) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerText = texto;
-            mediaTextHtml += `<div style="white-space: pre-line;">${tempDiv.innerHTML}</div>`;
+        if(texto && texto !== '<p><br></p>') {
+            mediaTextHtml += `<div style="white-space: normal; word-break: break-word;" class="ql-editor">${texto}</div>`;
         }
         
         if(mediaTextHtml) {
@@ -682,7 +716,10 @@ here<!DOCTYPE html>
         document.getElementById('fechaPublicacion').value = t.fechaPublicacion || '';
         document.getElementById('estudianteEspecifico').value = t.estudianteEspecifico || '';
         document.getElementById('fechaVencimiento').value = t.fechaVencimiento || '';
-        document.getElementById('textoLectura').value = t.contenido;
+        
+        document.getElementById('textoLectura').value = t.contenido || '';
+        if(quillEditor) quillEditor.root.innerHTML = t.contenido || '';
+
         document.getElementById('imagenTaller').value = t.imageUrl || '';
         document.getElementById('videoTaller').value = t.videoUrl || '';
         document.getElementById('docTaller').value = t.docUrl || '';
@@ -952,6 +989,18 @@ here<!DOCTYPE html>
     window.onload = () => { 
         cargarTalleres(); 
         cargarListaEstudiantes(); 
+        
+        // INICIALIZAMOS EL EDITOR QUILLJS
+        quillEditor = new Quill('#textoLecturaEditor', {
+            modules: { toolbar: '#editor-toolbar' },
+            theme: 'snow',
+            placeholder: 'Escribe aquí la lectura. Usa colores, viñetas, títulos...'
+        });
+        
+        // Cada que el profesor escriba, pasamos el HTML al input oculto
+        quillEditor.on('text-change', function() {
+            document.getElementById('textoLectura').value = quillEditor.root.innerHTML;
+        });
     };
   </script>
 </body>
