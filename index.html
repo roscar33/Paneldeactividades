@@ -574,7 +574,10 @@
         db.collection("configuracionGlobal").doc("listasEstudiantes").get().then(doc => {
             if (doc.exists) {
                 const listas = doc.data(); 
+                
                 listaEstudiantesGlobal = [];
+                let documentosVistos = new Set();
+                
                 for (const grado in listas) { 
                     const estudiantes = listas[grado]; 
                     if (Array.isArray(estudiantes)) { 
@@ -582,11 +585,17 @@
                             const partes = estudianteStr.split(' - '); 
                             const nombre = partes[0].trim(); 
                             const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre; 
-                            listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado }); 
+                            
+                            if (!documentosVistos.has(docIdentidad)) {
+                                documentosVistos.add(docIdentidad);
+                                listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado }); 
+                            }
                         }); 
                     } 
                 }
+                
                 listaEstudiantesGlobal.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                
                 const selectEl = document.getElementById('estudianteEspecifico'); 
                 let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
                 listaEstudiantesGlobal.forEach(est => { 
