@@ -574,17 +574,24 @@
         db.collection("configuracionGlobal").doc("listasEstudiantes").get().then(doc => {
             if (doc.exists) {
                 const listas = doc.data(); 
-                if (!listas['Quinto']) listas['Quinto'] = [];
-                const pedroData = "Pedro Pérez - 12345678"; if (!listas['Quinto'].includes(pedroData)) { listas['Quinto'].push(pedroData); db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Quinto': firebase.firestore.FieldValue.arrayUnion(pedroData) }); }
-                
-                if (!listas['Primero']) listas['Primero'] = [];
-                const mariaData = "Maria Fernanda Guerra Torres - 1037780041"; if (!listas['Primero'].includes(mariaData)) { listas['Primero'].push(mariaData); db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Primero': firebase.firestore.FieldValue.arrayUnion(mariaData) }); }
-
                 listaEstudiantesGlobal = [];
-                for (const grado in listas) { const estudiantes = listas[grado]; if (Array.isArray(estudiantes)) { estudiantes.forEach(estudianteStr => { const partes = estudianteStr.split(' - '); const nombre = partes[0].trim(); const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre; listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado }); }); } }
+                for (const grado in listas) { 
+                    const estudiantes = listas[grado]; 
+                    if (Array.isArray(estudiantes)) { 
+                        estudiantes.forEach(estudianteStr => { 
+                            const partes = estudianteStr.split(' - '); 
+                            const nombre = partes[0].trim(); 
+                            const docIdentidad = partes.length > 1 ? partes[1].trim() : nombre; 
+                            listaEstudiantesGlobal.push({ nombre, documento: docIdentidad, grado }); 
+                        }); 
+                    } 
+                }
                 listaEstudiantesGlobal.sort((a, b) => a.nombre.localeCompare(b.nombre));
-                const selectEl = document.getElementById('estudianteEspecifico'); let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
-                listaEstudiantesGlobal.forEach(est => { htmlOptions += `<option value="${est.documento}">${est.nombre} - ${est.grado}</option>`; });
+                const selectEl = document.getElementById('estudianteEspecifico'); 
+                let htmlOptions = '<option value="">Todos (Grupal) - Dejar en blanco para todo el grado</option>';
+                listaEstudiantesGlobal.forEach(est => { 
+                    htmlOptions += `<option value="${est.documento}">${est.nombre} - ${est.grado}</option>`; 
+                });
                 selectEl.innerHTML = htmlOptions; 
             }
         }).catch(err => console.error("Error cargando lista de estudiantes: ", err));
