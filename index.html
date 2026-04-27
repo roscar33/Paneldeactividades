@@ -575,6 +575,15 @@
             if (doc.exists) {
                 const listas = doc.data(); 
                 
+                // --- INYECCIÓN QUIRÚRGICA: Agregamos a Hellen a Tercero antes de procesar la lista ---
+                if (!listas["Tercero"]) {
+                    listas["Tercero"] = [];
+                }
+                if (!listas["Tercero"].find(e => e.includes("1044989674"))) {
+                    listas["Tercero"].push("GUERRERO DELGADO HELLEN GABRIELA - 1044989674");
+                }
+                // --------------------------------------------------------------------------------------
+                
                 listaEstudiantesGlobal = [];
                 let documentosVistos = new Set();
                 
